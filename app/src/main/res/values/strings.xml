@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">GotoVoid</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="hello_world">Hello Square World!</string>
+    <!-- provide a unique id for the location service notifications. -->
+    <string name="location_service_started" />
+    <string name="request_location_permission" />
+
+    <string name="recycler_view_recording" />
+</resources>

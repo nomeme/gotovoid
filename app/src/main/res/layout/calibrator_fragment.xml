@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.wear.widget.SwipeDismissFrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dismiss_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.wear.widget.BoxInsetLayout
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background_default"
+        android:orientation="vertical"
+        android:padding="@dimen/box_inset_layout_padding">
+
+        <gotovoid.de.gotovoid.view.CircularProgress
+            android:id="@+id/progress"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="5dp"
+            app:boxedEdges="all">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/altitude"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:text="200m"
+                    android:textSize="25dp"/>
+
+                <TextView
+                    android:id="@+id/pressure"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:text="1000 hPa"/>
+            </LinearLayout>
+
+        </FrameLayout>
+    </android.support.wear.widget.BoxInsetLayout>
+</android.support.wear.widget.SwipeDismissFrameLayout>

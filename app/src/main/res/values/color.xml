@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_text">@color/primary_text_dark</color>
+    <color name="background_default">#222227</color>
+    <color name="background_default_ambient">#000000</color>
+    <color name="track_path">#ff0000</color>
+    <color name="track_path_ambient">@color/primary_text</color>
+    <color name="track_location_primary">#0000bb</color>
+    <color name="track_location_background">#600000bb</color>
+</resources>

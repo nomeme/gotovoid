@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.wear.widget.SwipeDismissFrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dismiss_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.support.wear.widget.WearableRecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/background_default"
+        android:scrollbars="vertical"/>
+</android.support.wear.widget.SwipeDismissFrameLayout>
