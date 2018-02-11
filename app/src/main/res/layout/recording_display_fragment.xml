@@ -1,14 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.wear.widget.SwipeDismissFrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.wear.widget.SwipeDismissFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/dismiss_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.wear.widget.WearableRecyclerView
-        android:id="@+id/recycler_view"
+    <android.support.wear.widget.drawer.WearableDrawerLayout
+        android:id="@+id/drawer_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/background_default"/>
+        android:layout_height="match_parent">
+
+        <android.support.wear.widget.WearableRecyclerView
+            android:id="@+id/recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/background_default" />
+
+        <android.support.wear.widget.drawer.WearableActionDrawerView
+            android:id="@+id/bottom_action_drawer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:actionMenu="@menu/recording_action_drawer"
+            app:drawer_content="@+id/drawer_content"
+            app:peek_view="@+id/peek_view" />
+    </android.support.wear.widget.drawer.WearableDrawerLayout>
 
 </android.support.wear.widget.SwipeDismissFrameLayout>

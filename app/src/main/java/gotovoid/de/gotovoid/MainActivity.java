@@ -155,6 +155,13 @@ public class MainActivity extends FragmentActivity
         } else {
             startService();
         }
+        if (ActivityCompat.checkSelfPermission(
+                this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            }, R.string.request_write_external_storage_permission);
+        }
         //mServiceMessenger.doBind(getApplicationContext());
     }
 
@@ -178,6 +185,8 @@ public class MainActivity extends FragmentActivity
                 startService();
                 // DO nothing
                 break;
+            case R.string.request_write_external_storage_permission:
+                Log.d(TAG, "onRequestPermissionsResult: write external: " + grantResults);
         }
     }
 

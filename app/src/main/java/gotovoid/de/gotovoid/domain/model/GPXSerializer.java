@@ -7,6 +7,7 @@ import org.xmlpull.v1.XmlSerializer;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -29,8 +30,18 @@ public class GPXSerializer {
         if (recording == null) {
             return;
         }
-        XmlSerializer serializer = Xml.newSerializer();
         StringWriter writer = new StringWriter();
+        serializeRecording(recording, writer);
+        Log.d(TAG, "serializeRecording: " + writer.toString());
+    }
+
+    public static void serializeRecording(final RecordingWithEntries recording,
+                                          final Writer writer)
+            throws IOException {
+        Log.d(TAG, "serializeRecording() called with: recording = [" + recording
+                + "], writer = [" + writer + "]");
+
+        XmlSerializer serializer = Xml.newSerializer();
         serializer.setOutput(writer);
 
         serializer.startDocument("utf-8", true);
@@ -42,7 +53,6 @@ public class GPXSerializer {
         serializeTrack(recording, serializer);
         serializer.endTag(null, "gpx");
         serializer.flush();
-        Log.d(TAG, "serializeRecording: " + writer.toString());
     }
 
     private static void serializeMetadata(final Recording recording,
@@ -85,7 +95,7 @@ public class GPXSerializer {
     private static void serializeElevation(final RecordingEntry entry,
                                            final XmlSerializer serializer) throws IOException {
         serializer.startTag(null, "ele");
-        serializer.text(String.valueOf((float)entry.getAltitude()));
+        serializer.text(String.valueOf((float) entry.getAltitude()));
         serializer.endTag(null, "ele");
     }
 

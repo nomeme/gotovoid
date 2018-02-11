@@ -8,6 +8,7 @@
     <!-- provide a unique id for the location service notifications. -->
     <string name="location_service_started" />
     <string name="request_location_permission" />
+    <string name="request_write_external_storage_permission"/>
 
     <string name="recycler_view_recording" />
 </resources>

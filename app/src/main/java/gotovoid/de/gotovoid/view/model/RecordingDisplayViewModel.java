@@ -25,6 +25,7 @@ public class RecordingDisplayViewModel extends AndroidViewModel {
     private final AppDatabase mDatabase;
 
     private long mRecordingId;
+    private boolean mIsGPSActive;
     private LocationRepository mRepository;
     private LiveData<Recording> mRecording;
     private LiveData<List<RecordingEntry>> mRecordingEntries;
@@ -55,6 +56,10 @@ public class RecordingDisplayViewModel extends AndroidViewModel {
 
     public long getRecordingId() {
         return mRecordingId;
+    }
+
+    public boolean isGPSActive() {
+        return mLocation.hasActiveObservers();
     }
 
     public LiveData<List<RecordingEntry>> getRecordingEntries() {
