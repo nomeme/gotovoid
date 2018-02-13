@@ -44,8 +44,8 @@ class RecordingSensor extends AbstractSensor<Long> {
                             new RecordingEntry(
                                     mRecordingId,
                                     System.currentTimeMillis(),
-                                    location.getLatitude(),
                                     location.getLongitude(),
+                                    location.getLatitude(),
                                     mAltitude);
                     Log.d(TAG, "onChange: 2");
                     mRecordingEntryObserver.onChange(entry);
