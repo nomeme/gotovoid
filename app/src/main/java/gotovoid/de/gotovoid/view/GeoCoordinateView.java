@@ -120,7 +120,7 @@ public class GeoCoordinateView extends View implements IAmbientModeHandler {
                 canvas.drawCircle(point.getXPos(),
                         point.getYPos(),
                         radius,
-                        mPaint.mLocationCenter);
+                        mPaint.mLocationBackgroundBorder);
                 canvas.drawCircle(point.getXPos(),
                         point.getYPos(),
                         radius,
