@@ -95,7 +95,7 @@ public class RecordingListFragment extends Fragment {
         mRecyclerView = contenView.findViewById(R.id.recycler_view);
         // Tell the RecyclerView that it's size will not change because of the content.
         mRecyclerView.setHasFixedSize(true);
-        // Wearable only. Align first and last elemet at the center of the RecyclerView.
+        // Wearable only. Align first and last element at the center of the RecyclerView.
         mRecyclerView.setEdgeItemsCenteringEnabled(true);
         // Request the focus so we can use rotary input devices.
         mRecyclerView.requestFocus();
