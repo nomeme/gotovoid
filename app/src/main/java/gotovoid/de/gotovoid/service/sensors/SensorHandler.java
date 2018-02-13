@@ -119,7 +119,7 @@ public class SensorHandler {
             mPressureSensor.removeObserver(observer);
         }
         if (observer instanceof LocationObserver) {
-            mLocationSensor.addObserver(observer);
+            mLocationSensor.removeObserver(observer);
         }
         if (observer instanceof RecordingObserver) {
             mRecordingSensor.removeObserver(observer);

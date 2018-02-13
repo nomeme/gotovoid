@@ -106,6 +106,7 @@ public class ServiceMessageHandler {
 
     private void addLocationObserver(final Messenger messenger) {
         if (mLocationObservers.containsKey(messenger)) {
+            Log.d(TAG, "addLocationObserver: already registered");
             return;
         }
         final LocationObserver observer = new LocationObserver(messenger);
@@ -119,7 +120,7 @@ public class ServiceMessageHandler {
         if (mLocationObservers.containsKey(messenger)) {
             final LocationObserver observer;
             synchronized (mLocationObservers) {
-                observer = mLocationObservers.get(messenger);
+                observer = mLocationObservers.remove(messenger);
             }
             mSensorHandler.removeObserver(observer);
         }
