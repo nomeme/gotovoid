@@ -8,7 +8,6 @@ import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.RecyclerView.ViewHolder;
 import android.support.wear.widget.SwipeDismissFrameLayout;
@@ -26,7 +25,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,6 +39,10 @@ import gotovoid.de.gotovoid.service.repository.LocationRepository;
 import gotovoid.de.gotovoid.view.model.RecordingDisplayViewModel;
 
 /**
+ * This fragment shows a single recording.
+ * It shows the GPS coordinates in a {@link GeoCoordinateView} and track attributes in a
+ * {@link RecyclerView}.
+ * <p>
  * Created by DJ on 05/01/18.
  */
 
@@ -66,6 +68,7 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
                 + savedInstanceState + "]");
         mModel.init(LocationRepository.getRepository(getActivity()));
         if (savedInstanceState != null && savedInstanceState.containsKey(RECORDING_ID_KEY)) {
+            Log.d(TAG, "onCreate: set arguments");
             initModel(savedInstanceState.getLong(RECORDING_ID_KEY));
         }
 
@@ -80,23 +83,27 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
         Log.d(TAG, "onCreateView() called with: inflater = [" + inflater + "], container = ["
                 + container + "], savedInstanceState = [" + savedInstanceState + "]");
         final Bundle arguments = getArguments();
+        // TODO: check if this is necessary here
         if (arguments != null && arguments.containsKey(RECORDING_ID_KEY)) {
+            Log.d(TAG, "onCreateView: set arguments");
             initModel(arguments.getLong(RECORDING_ID_KEY));
         }
         final View view = inflater.inflate(R.layout.recording_display_fragment,
                 container,
                 false);
+        // Get the RecyclerView and configure it.
         mRecyclerView = view.findViewById(R.id.recycler_view);
+        // Tell the RecyclerView that it's size will not change because of the content.
         mRecyclerView.setHasFixedSize(true);
+        // Wearable only. Align first and last element at the center of the RecyclerView.
         mRecyclerView.setEdgeItemsCenteringEnabled(true);
+        // Set the layout manager for the RecyclerView.
         mRecyclerView.setLayoutManager(new WearableLinearLayoutManager(getContext()));
 
         mAdapter = new DisplayAdapter();
         mRecyclerView.setAdapter(mAdapter);
 
-        mDrawer = view.findViewById(R.id.drawer_layout);
-        mDrawer.requestFocus();
-
+        // Configure the dismiss layout.
         mDismissFrameLayout = (SwipeDismissFrameLayout) view.findViewById(R.id.dismiss_layout);
         mDismissFrameLayout.addCallback(new Callback() {
             @Override
@@ -105,7 +112,11 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
                 getFragmentManager().popBackStack();
             }
         });
-
+        // Drawer containing the RecyclerView and the ActionDrawerView.
+        mDrawer = view.findViewById(R.id.drawer_layout);
+        // Request the focus so we can use rotary input devices.
+        mDrawer.requestFocus();
+        // The ActionDrawerView containing the actions for this screen.
         mActionDrawerView = (WearableActionDrawerView) view.findViewById(R.id.bottom_action_drawer);
         mActionDrawerView.setIsAutoPeekEnabled(false);
         mActionDrawerView.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
@@ -115,57 +126,18 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
                 switch (item.getItemId()) {
                     case R.id.menu_gps:
                         Log.d(TAG, "onMenuItemClick: activate gps");
-                        if (mModel.isGPSActive()) {
-                            mModel.getLocation().removeObservers(RecordingDisplayFragment.this);
-                            GeoCoordinateHolder data = mAdapter.getHeaderData();
-                            final List<GeoCoordinate> coords;
-                            if (data == null) {
-                                coords = null;
-                            } else {
-                                coords = data.getData();
-                            }
-                            mAdapter.setHeaderData(new GeoCoordinateHolder(coords, null));
-                        } else {
-                            mModel.getLocation().observe(RecordingDisplayFragment.this,
-                                    new Observer<Location>() {
-                                        @Override
-                                        public void onChanged(@Nullable final Location location) {
-                                            Log.d(TAG, "onChanged() called with: location = [" + location + "]");
-                                            final GeoCoordinateHolder data = mAdapter.getHeaderData();
-                                            final List<GeoCoordinate> coords;
-                                            if (data == null) {
-                                                coords = null;
-                                            } else {
-                                                coords = data.getData();
-                                            }
-                                            mAdapter.setHeaderData(new GeoCoordinateHolder(coords, location));
-                                        }
-                                    });
-                        }
-                        setGPSMenuItemText(item);
+                        configureGPS();
+                        configureGPSMenuItem(item);
                         break;
                     case R.id.menu_save_action:
                         Log.d(TAG, "onMenuItemClick: save action");
-                        RecordingWithEntries recording = mModel.getRecordingWithEntries().getValue();
-                        File sdCard = Environment.getExternalStorageDirectory();
-                        File dir = new File(sdCard.getAbsolutePath() + "/Recordings");
-                        dir.mkdirs();
-                        File file = new File(dir, recording.getRecording().getName());
-                        try {
-                            file.createNewFile();
-                            FileWriter writer = new FileWriter(file);
-                            GPXSerializer.serializeRecording(
-                                    mModel.getRecordingWithEntries().getValue(),
-                                    writer);
-                        } catch (final IOException exception) {
-                            Log.e(TAG, "onMenuItemClick: ", exception);
-                        }
+                        saveToFile();
                         break;
                 }
                 return false;
             }
         });
-
+        // TODO: move this in external class
         mRecyclerView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
             private boolean mIsPeeking;
 
@@ -190,12 +162,77 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
             }
         });
         MenuItem item = mActionDrawerView.getMenu().findItem(R.id.menu_gps);
-
-        setGPSMenuItemText(item);
+        configureGPSMenuItem(item);
         return view;
     }
 
-    private void setGPSMenuItemText(final MenuItem item) {
+    @Override
+    public void onPause() {
+        mModel.getLocation().removeObservers(this);
+        super.onPause();
+    }
+
+    /**
+     * Enable or disable the GPS depending on the current state.
+     */
+    private void configureGPS() {
+        if (mModel.isGPSActive()) {
+            mModel.getLocation().removeObservers(RecordingDisplayFragment.this);
+            GeoCoordinateHolder data = mAdapter.getHeaderData();
+            final List<GeoCoordinate> coords;
+            if (data == null) {
+                coords = null;
+            } else {
+                coords = data.getData();
+            }
+            mAdapter.setHeaderData(new GeoCoordinateHolder(coords, null));
+        } else {
+            mModel.getLocation().observe(RecordingDisplayFragment.this,
+                    new Observer<Location>() {
+                        @Override
+                        public void onChanged(@Nullable final Location location) {
+                            Log.d(TAG, "onChanged() called with: location = ["
+                                    + location + "]");
+                            final GeoCoordinateHolder data = mAdapter.getHeaderData();
+                            final List<GeoCoordinate> coords;
+                            if (data == null) {
+                                coords = null;
+                            } else {
+                                coords = data.getData();
+                            }
+                            mAdapter.setHeaderData(new GeoCoordinateHolder(coords, location));
+                        }
+                    });
+        }
+    }
+
+    /**
+     * Save the {@link RecordingWithEntries} to a file
+     */
+    // TODO: possibly move this to the model.
+    private void saveToFile() {
+        final RecordingWithEntries recording = mModel.getRecordingWithEntries().getValue();
+        final File sdCard = Environment.getExternalStorageDirectory();
+        final File dir = new File(sdCard.getAbsolutePath() + "/Recordings");
+        dir.mkdirs();
+        final File file = new File(dir, recording.getRecording().getName());
+        try {
+            file.createNewFile();
+            final FileWriter writer = new FileWriter(file);
+            GPXSerializer.serializeRecording(
+                    mModel.getRecordingWithEntries().getValue(),
+                    writer);
+        } catch (final IOException exception) {
+            Log.e(TAG, "onMenuItemClick: ", exception);
+        }
+    }
+
+    /**
+     * Sets the text and icon for the GPS {@link MenuItem} to represent the current state.
+     *
+     * @param item the {@link MenuItem} to change
+     */
+    private void configureGPSMenuItem(final MenuItem item) {
         if (mModel.isGPSActive()) {
             item.setTitle("Deactivate GPS");
             item.setIcon(R.drawable.ic_gps_fixed_white_48dp);
@@ -205,28 +242,45 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
         }
     }
 
+    /**
+     * Initialize the {@link RecordingDisplayViewModel} and register necessary observers in order
+     * to being able to show the {@link RecordingWithEntries}.
+     *
+     * @param recordingId the id of the {@link RecordingDisplayViewModel} to show
+     */
     private void initModel(final long recordingId) {
         Log.d(TAG, "initModel() called with: recordingId = [" + recordingId + "]");
         mModel.setRecordingId(recordingId);
         mModel.getRecordingEntries().observe(this, new Observer<List<RecordingEntry>>() {
             @Override
             public void onChanged(@Nullable final List<RecordingEntry> recordingEntries) {
-                // TODO: put this into ViewModel
+                /*
+                This method extracts the necessary data from the RecordingEntries to be displayed
+                in the RecyclerView.
+                 */
+                // TODO: put this into ViewModel???
                 Log.d(TAG, "onChanged() called with: recordingEntries = ["
                         + recordingEntries + "]");
+                // Holder list for additional information.
                 final List<GenericDataHolder> holders = new ArrayList<>();
 
                 final List<GeoCoordinate> coordinates = new ArrayList<>();
+                // TODO: consider adding this information to the Recording object.
                 double ascending = 0;
                 double descending = 0;
                 RecordingEntry prev = null;
                 RecordingEntry curr = null;
                 if (recordingEntries != null) {
+                    // Convert the RecordingEntries tp GeoCoordinates and extract the data
                     for (RecordingEntry entry : recordingEntries) {
                         prev = curr;
                         curr = entry;
+                        // This is needed for the GeoCoordinateView
+                        // Convert to GeoCoordinates
                         coordinates.add(new GeoCoordinate(entry.getLatitude(),
                                 entry.getLongitude()));
+                        // This is needed for the additional info.
+                        // Get total altitude change.
                         if (prev != null) {
                             final double diff = curr.getAltitude() - prev.getAltitude();
                             if (diff > 0) {
@@ -236,9 +290,8 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
                             }
                         }
                     }
-                }/*
-                holders.add(new GeoCoordinateHolder(coordinates));
-                */
+                }
+                // This is needed in order to display the current location.
                 final GeoCoordinateHolder old = mAdapter.getHeaderData();
                 final Location location;
                 if (old == null) {
@@ -246,16 +299,17 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
                 } else {
                     location = old.getPosition();
                 }
+                // Update the data for the GeoCoordinateView.
                 mAdapter.setHeaderData(new GeoCoordinateHolder(coordinates, location));
-
+                // Prepare the additional information data.
                 holders.add(new ShortSummaryHolder(GenericDataHolder.Type.ASCENDED_SUMMARY,
                         (int) ascending));
                 holders.add(new ShortSummaryHolder(GenericDataHolder.Type.DESCENDED_SUMMARY,
                         (int) descending));
+                // Set the additional data.
                 mAdapter.setData(holders);
             }
         });
-
 
         mModel.getRecordingWithEntries().observe(this, new Observer<RecordingWithEntries>() {
             @Override
@@ -265,7 +319,20 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
         });
     }
 
+    /**
+     * This class defines a generic data holder object.
+     * This class should also enable comparison for {@link android.support.v7.util.DiffUtil}.
+     *
+     * @param <DataType> type of data to hold.
+     */
     private static class GenericDataHolder<DataType> {
+        /**
+         * Enumeration for the available types of data to be held by the data holder.
+         * This is not really generic.
+         *
+         * @deprecated use instanceof concrete implementation instead
+         */
+        @Deprecated
         enum Type {
             GEO_COORDINATES,
             ASCENDED_SUMMARY,
@@ -275,29 +342,65 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
         private final Type mType;
         private final DataType mData;
 
+        /**
+         * Constructor taking the {@link Type} and data to store.
+         *
+         * @param type the type of the data
+         * @param data the data
+         */
         public GenericDataHolder(final Type type, final DataType data) {
             mType = type;
             mData = data;
         }
 
+        /**
+         * Returns the {@link Type} of the data managed by this object.
+         *
+         * @return the {@link Type}
+         * @deprecated use instanceof concrete implementation.
+         */
+        @Deprecated
         public Type getType() {
             return mType;
         }
 
+        /**
+         * Returns the data managed by this {@link GenericDataHolder}.
+         *
+         * @return the data
+         */
         public DataType getData() {
             return mData;
         }
     }
 
+    /**
+     * Data holder for the {@link GeoCoordinateView}.
+     * Stores a {@link List} of {@link GeoCoordinate}s to be displayed by a
+     * {@link GeoCoordinateView} that is managed by a {@link GeoCoordinateViewHolder}.
+     * Also takes the current location as {@link GeoCoordinate}.
+     */
     private class GeoCoordinateHolder extends GenericDataHolder<List<GeoCoordinate>> {
         private final Location mPosition;
 
-        public GeoCoordinateHolder(final List<GeoCoordinate> entries,
-                                   final Location position) {
+        /**
+         * Constructor taking the {@link List} of {@link GeoCoordinate}s to display and the current
+         * position as {@link GeoCoordinate}.
+         *
+         * @param entries  the {@link List} of {@link GeoCoordinate}s to show
+         * @param position the current position as {@link GeoCoordinate}
+         */
+        public GeoCoordinateHolder(@Nullable final List<GeoCoordinate> entries,
+                                   @Nullable final Location position) {
             super(Type.GEO_COORDINATES, entries);
             mPosition = position;
         }
 
+        /**
+         * Returns the current position.
+         *
+         * @return the current position
+         */
         private Location getPosition() {
             return mPosition;
         }
@@ -369,23 +472,16 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
         }
     }
 
-    private class SaveButtonViewHolder extends RecyclerView.ViewHolder {
-        public SaveButtonViewHolder(final View itemView) {
-            super(itemView);
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(final View view) {
-                    try {
-                        GPXSerializer.serializeRecording(
-                                mModel.getRecordingWithEntries().getValue());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        }
-    }
-
+    /**
+     * Adapter for the {@link RecyclerView}. Has one header entry, being the
+     * {@link GeoCoordinateView} that is always available.
+     * The {@link GeoCoordinateView} is managed by a {@link GeoCoordinateViewHolder}.
+     * The data for the {@link GeoCoordinateViewHolder} needs to be provided in a
+     * {@link GeoCoordinateHolder}.
+     * Additional entries can be added as {@link List} content being of type
+     * {@link ShortSummaryHolder} and will be added to a {@link View} managed by an instance of the
+     * {@link ShortSummaryViewHolder}.
+     */
     private class DisplayAdapter extends RecyclerView.Adapter<ViewHolder> {
         private static final int GEO_COORDINATE_VIEW = 0;
         private static final int SHORT_SUMMARY_VIEW = 1;
@@ -465,15 +561,17 @@ public class RecordingDisplayFragment extends Fragment implements IAmbientModeHa
         }
 
         public void setHeaderData(final GeoCoordinateHolder data) {
-            Log.d(TAG, "setHeaderData: ");
             mHeaderData = data;
+            Log.d(TAG, "setHeaderData() called with: data = [" + data + "]");
             GeoCoordinateViewHolder holder = (GeoCoordinateViewHolder) mRecyclerView
                     .findViewHolderForAdapterPosition(0);
             if (holder == null) {
                 notifyItemChanged(0);
             } else {
                 holder.setData(mHeaderData);
-                holder.mCoordinateView.invalidate();
+                holder.itemView.invalidate();
+                // TODO: only call if content is different!
+                notifyItemChanged(0);
             }
         }
 
