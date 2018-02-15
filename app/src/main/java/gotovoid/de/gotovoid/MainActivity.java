@@ -24,7 +24,7 @@ import gotovoid.de.gotovoid.repository.IRepositoryProvider;
 import gotovoid.de.gotovoid.service.communication.LocationServiceMessenger;
 import gotovoid.de.gotovoid.service.repository.LocationRepository;
 import gotovoid.de.gotovoid.view.CalibratorFragment;
-import gotovoid.de.gotovoid.view.IAmbientModeHandler;
+import gotovoid.de.gotovoid.view.IUpdateableAmbientModeHandler;
 import gotovoid.de.gotovoid.view.RecorderFragment;
 import gotovoid.de.gotovoid.view.RecordingListFragment;
 import gotovoid.de.gotovoid.service.LocationService;
@@ -195,7 +195,6 @@ public class MainActivity extends FragmentActivity
         Log.d(TAG, "onPause() called");
         mLocationServiceMessenger.doUnbind(this);
         super.onPause();
-        //mServiceMessenger.doUnbind(getApplicationContext());
     }
 
     @Override
@@ -232,8 +231,8 @@ public class MainActivity extends FragmentActivity
             if (fragments.size() > 0) {
                 Fragment fragment = fragments.get(fragments.size() - 1);
                 Log.d(TAG, "onEnterAmbient: fragment: " + fragment);
-                if (fragment != null && fragment instanceof IAmbientModeHandler) {
-                    IAmbientModeHandler activeView = (IAmbientModeHandler) fragment;
+                if (fragment != null && fragment instanceof IUpdateableAmbientModeHandler) {
+                    IUpdateableAmbientModeHandler activeView = (IUpdateableAmbientModeHandler) fragment;
                     activeView.setIsAmbient(true);
                 } else {
                     // TODO: exit app
@@ -254,8 +253,8 @@ public class MainActivity extends FragmentActivity
             List<Fragment> fragments = getSupportFragmentManager().getFragments();
             if (fragments.size() > 0) {
                 Fragment fragment = fragments.get(fragments.size() - 1);
-                if (fragment != null && fragment instanceof IAmbientModeHandler) {
-                    IAmbientModeHandler activeView = (IAmbientModeHandler) fragment;
+                if (fragment != null && fragment instanceof IUpdateableAmbientModeHandler) {
+                    IUpdateableAmbientModeHandler activeView = (IUpdateableAmbientModeHandler) fragment;
                     activeView.setIsAmbient(false);
                 }
             }
@@ -272,8 +271,8 @@ public class MainActivity extends FragmentActivity
             List<Fragment> fragments = getSupportFragmentManager().getFragments();
             if (fragments.size() > 0) {
                 Fragment fragment = fragments.get(fragments.size() - 1);
-                if (fragment != null && fragment instanceof IAmbientModeHandler) {
-                    IAmbientModeHandler activeView = (IAmbientModeHandler) fragment;
+                if (fragment != null && fragment instanceof IUpdateableAmbientModeHandler) {
+                    IUpdateableAmbientModeHandler activeView = (IUpdateableAmbientModeHandler) fragment;
                     activeView.onUpdateAmbient();
                 }
             }

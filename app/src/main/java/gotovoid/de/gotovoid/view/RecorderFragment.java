@@ -30,7 +30,7 @@ import gotovoid.de.gotovoid.view.model.RecorderViewModel;
  * Created by DJ on 20/01/18.
  */
 
-public class RecorderFragment extends Fragment implements IAmbientModeHandler {
+public class RecorderFragment extends Fragment implements IUpdateableAmbientModeHandler {
     private static final String TAG = RecorderFragment.class.getSimpleName();
     private RecorderViewModel mViewModel;
 

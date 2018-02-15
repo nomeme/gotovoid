@@ -46,7 +46,7 @@ import gotovoid.de.gotovoid.view.model.RecordingDisplayViewModel;
  * Created by DJ on 05/01/18.
  */
 
-public class RecordingDisplayFragment extends Fragment implements IAmbientModeHandler {
+public class RecordingDisplayFragment extends Fragment implements IUpdateableAmbientModeHandler {
     private static final String TAG = RecordingDisplayFragment.class.getSimpleName();
     public static final String RECORDING_ID_KEY = TAG.toLowerCase() + "_recording_id";
 
