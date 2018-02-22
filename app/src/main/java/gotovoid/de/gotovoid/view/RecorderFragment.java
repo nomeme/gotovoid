@@ -286,12 +286,14 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
             Log.d(TAG, "setGeoCoordinates() called with: coordinates = [" + coordinates + "]");
             mGeoCoordinates = coordinates;
             GeoCoordinateViewHolder holder = (GeoCoordinateViewHolder) mRecyclerView
-                    .findViewHolderForItemId(0);
+                    .findViewHolderForAdapterPosition(0);
             if (holder == null) {
+                Log.d(TAG, "setGeoCoordinates: holder is null");
                 notifyItemChanged(0);
             } else {
+                Log.d(TAG, "setGeoCoordinates: holder is !null");
                 holder.setData(coordinates);
-                holder.itemView.invalidate();
+                holder.mView.invalidate();
             }
         }
 
@@ -304,7 +306,7 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
                 notifyItemChanged(1);
             } else {
                 holder.setData(data);
-                holder.itemView.invalidate();
+                holder.mView.invalidate();
             }
         }
 
