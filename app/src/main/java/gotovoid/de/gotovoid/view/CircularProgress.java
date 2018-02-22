@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.support.wearable.input.RotaryEncoder;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -18,15 +19,15 @@ import gotovoid.de.gotovoid.R;
  * Created by DJ on 22/12/17.
  */
 
-public class CircularProgress extends View {
+public class CircularProgress extends View implements IAmbientModeHandler {
     private static final String TAG = CircularProgress.class.getSimpleName();
     private OnProgressChangedListener mOnProgressChangedListener;
     private final float mStrokeWidthUnselected = 2;
     private final float mStrokeWidthSelected = 10;
 
-    private float mStrokeWidth = mStrokeWidthUnselected;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private Runnable mTask;
+    private Paint mPaint;
 
     public CircularProgress(final Context context) {
         super(context);
@@ -54,6 +55,11 @@ public class CircularProgress extends View {
     }
 
     private void init() {
+        mPaint = new Paint();
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setColor(getResources().getColor(R.color.light_grey, null));
+        mPaint.setStrokeWidth(mStrokeWidthUnselected);
+        mPaint.setAntiAlias(true);
         // Needs to be active for rotary input to be received
         setFocusableInTouchMode(true);
         setOnGenericMotionListener(new OnGenericMotionListener() {
@@ -61,6 +67,8 @@ public class CircularProgress extends View {
 
             @Override
             public boolean onGenericMotion(final View view, final MotionEvent motionEvent) {
+                Log.d(TAG, "onGenericMotion() called with: view = [" + view
+                        + "], motionEvent = [" + motionEvent + "]");
                 if (view != CircularProgress.this) {
                     return false;
                 }
@@ -79,7 +87,8 @@ public class CircularProgress extends View {
                     }
 
                     if (!mIsActive) {
-                        mStrokeWidth = mStrokeWidthSelected;
+                        Log.d(TAG, "onGenericMotion: change stroke width");
+                        mPaint.setStrokeWidth(mStrokeWidthSelected);
                         mIsActive = true;
                         invalidate();
                     }
@@ -87,7 +96,7 @@ public class CircularProgress extends View {
                         @Override
                         public void run() {
                             if (mIsActive) {
-                                mStrokeWidth = mStrokeWidthUnselected;
+                                mPaint.setStrokeWidth(mStrokeWidthUnselected);
                                 mIsActive = false;
                                 invalidate();
                             }
@@ -126,12 +135,20 @@ public class CircularProgress extends View {
         final int height = getHeight();
         final int radius = width - 10;
 
-        final Paint paint = new Paint();
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setColor(getResources().getColor(R.color.light_grey, null));
-        paint.setStrokeWidth(mStrokeWidth);
+        canvas.drawCircle(width / 2f, height / 2f, radius / 2f, mPaint);
+    }
 
-        canvas.drawCircle(width / 2f, height / 2f, radius / 2f, paint);
+    @Override
+    public void setIsAmbient(final boolean isAmbient) {
+        if (isAmbient) {
+            mPaint.setAntiAlias(false);
+            mPaint.setColor(ContextCompat.getColor(getContext(), R.color.black));
+            invalidate();
+        } else {
+            mPaint.setAntiAlias(true);
+            mPaint.setColor(ContextCompat.getColor(getContext(), R.color.light_grey));
+            invalidate();
+        }
     }
 
     public interface OnProgressChangedListener {
