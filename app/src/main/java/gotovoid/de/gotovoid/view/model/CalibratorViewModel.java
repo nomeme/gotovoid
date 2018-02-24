@@ -14,21 +14,43 @@ import android.util.Log;
 import gotovoid.de.gotovoid.database.AppDatabase;
 import gotovoid.de.gotovoid.database.model.CalibratedAltitude;
 import gotovoid.de.gotovoid.service.repository.LocationRepository;
+import gotovoid.de.gotovoid.service.sensors.AbstractSensor;
+import gotovoid.de.gotovoid.service.sensors.SensorType;
+import gotovoid.de.gotovoid.view.IAmbientModeHandler;
+
+/**
+ * Created by DJ on 23/12/17.
+ */
 
 /**
  * This {@link AndroidViewModel} implementation handles all the data displayed and modified by
  * the {@link gotovoid.de.gotovoid.view.CalibratorFragment}.
  * <p>
- * Created by DJ on 23/12/17.
  */
-
 public class CalibratorViewModel extends AndroidViewModel {
     private static final String TAG = CalibratorViewModel.class.getSimpleName();
+    private static final long UPDATE_FREQUENCY = 1000;
 
     /**
      * Database to store the data.
      */
     private final AppDatabase mDatabase;
+
+    /**
+     * Observer for pressure sensor updates.
+     */
+    private final LocationRepository.ServiceObserver<Float> mPressureObserver;
+
+    /**
+     * Thread to handle background tasks, like modifying database entries.
+     */
+    private final HandlerThread mHandlerThread;
+
+    /**
+     * Handler to add {@link Runnable}s to the background thread.
+     */
+    private final Handler mHandler;
+
     /**
      * The repository for location data.
      */
@@ -37,11 +59,11 @@ public class CalibratorViewModel extends AndroidViewModel {
     /**
      * Value holder for the current pressure.
      */
-    private LiveData<Float> mCurrentPressure;
+    final private MutableLiveData<Float> mCurrentPressure;
     /**
      * Value holder for the current altitude.
      */
-    private MutableLiveData<Integer> mCurrentAltitude;
+    final private MutableLiveData<Integer> mCurrentAltitude;
 
     /**
      * Stores the calibrated altitude.
@@ -52,16 +74,6 @@ public class CalibratorViewModel extends AndroidViewModel {
      * Returns true if the altitude changed due to user interaction.
      */
     private boolean mIsAltitudeChanged = false;
-
-    /**
-     * Thread to handle background tasks, like modifying database entries.
-     */
-    private HandlerThread mHandlerThread;
-    /**
-     * Handler to add {@link Runnable}s to the background thread.
-     */
-    private Handler mHandler;
-
 
     /**
      * Constructor taking the {@link Application}.
@@ -77,6 +89,24 @@ public class CalibratorViewModel extends AndroidViewModel {
 
         // Get the database instance.
         mDatabase = AppDatabase.getDatabaseInstance(application);
+
+        // Create the pressure sensor observer to be notified by the repository.
+        mPressureObserver = new LocationRepository.ServiceObserver<Float>(
+                UPDATE_FREQUENCY,
+                SensorType.PRESSURE) {
+            @Override
+            public void onChange(final Float value) {
+                // Notify the pressure LiveData.
+                mCurrentPressure.postValue(value);
+                // Notify the altitude LiveData
+                mCurrentAltitude.postValue(calculateAltitude(value));
+            }
+        };
+        // Create the LiveData object for the current pressure
+        mCurrentPressure = new LocationRepository.ObserverLiveData<>(new RegistrationHandler());
+        // Create the LiveData object for the altitude
+        mCurrentAltitude = new LocationRepository.ObserverLiveData<>(new RegistrationHandler());
+
         // We need to extract the data using a background thread
         // TODO: maybe use LiveData instead
         mHandler.post(new Runnable() {
@@ -87,17 +117,16 @@ public class CalibratorViewModel extends AndroidViewModel {
         });
     }
 
-    public void init(final LocationRepository repository) {
+    /**
+     * Initialize the {@link CalibratorViewModel} with the {@link LocationRepository} needed to
+     * receive data.
+     *
+     * @param repository the {@link LocationRepository} to receive data from
+     */
+    public void init(@NonNull final LocationRepository repository) {
         // Get the repository
+        Log.d(TAG, "init() called with: repository = [" + repository + "]");
         mRepository = repository;
-        mCurrentPressure = mRepository.getPressure();
-        mCurrentAltitude =
-                new ObserverMutableLiveData<Integer, Float>(mCurrentPressure) {
-                    @Override
-                    public void onChanged(@Nullable final Float pressure) {
-                        postValue(calculateAltitude(pressure));
-                    }
-                };
     }
 
     /**
@@ -141,11 +170,10 @@ public class CalibratorViewModel extends AndroidViewModel {
     }
 
     /**
-     * Called when the calibrated altitude value should be persisted.
+     * Called when the current calibrated altitude value should be persisted.
      */
     public void persistCalibratedAltitude() {
         Log.d(TAG, "persistCalibratedAltitude() called");
-
         // Fire up a background thread so we can modify the database.
         mHandler.post(new Runnable() {
             @Override
@@ -185,32 +213,31 @@ public class CalibratorViewModel extends AndroidViewModel {
     }
 
     /**
-     * This class defines a {@link LiveData} implementation that itself observes a {@link LiveData}
-     * instance and notifies it's listeners about changes.
-     *
-     * @param <Type>  Type of the {@link LiveData}
-     * @param <Value> Type of the monitored {@link LiveData}
+     * This class handles the registration of the
+     * {@link gotovoid.de.gotovoid.service.sensors.LocationSensor.Observer} when the
+     * {@link LiveData}'s {@link LiveData#hasActiveObservers()} changes.
      */
-    private abstract class ObserverMutableLiveData<Type, Value>
-            extends MutableLiveData<Type>
-            implements Observer<Value> {
-        private final LiveData<Value> mObservedLiveData;
-
-        private ObserverMutableLiveData(@NonNull final LiveData<Value> observedLiveData) {
-            mObservedLiveData = observedLiveData;
+    private class RegistrationHandler
+            implements LocationRepository.ObserverLiveData.RegistrationHandler {
+        @Override
+        public void onRegister() {
+            Log.d(TAG, "onRegister() called");
+            Log.d(TAG, "onRegister: " + mRepository);
+            if (mRepository != null) {
+                mRepository.addObserver(mPressureObserver);
+            }
         }
 
         @Override
-        protected void onActive() {
-            mObservedLiveData.observeForever(this);
+        public void onUnregister() {
+            Log.d(TAG, "onUnregister() called");
+            Log.d(TAG, "onUnregister: " + mRepository);
+            if (mRepository != null) {
+                if (!mCurrentAltitude.hasActiveObservers()
+                        && !mCurrentPressure.hasActiveObservers())
+                    mRepository.removeObserver(mPressureObserver);
+            }
         }
-
-        @Override
-        protected void onInactive() {
-            mObservedLiveData.removeObserver(this);
-        }
-
-        @Override
-        public abstract void onChanged(@Nullable final Value value);
     }
+
 }

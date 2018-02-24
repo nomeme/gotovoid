@@ -12,10 +12,23 @@ import android.util.Log;
  * Created by DJ on 07/01/18.
  */
 
+/**
+ * Concrete implementation of the {@link AbstractSensor} for air pressure.
+ * Serves as wrapper for the actual {@link Sensor} provided by the system.
+ */
 public class PressureSensor extends AbstractSensor<Float> {
     private static final String TAG = PressureSensor.class.getSimpleName();
+    /**
+     * {@link SensorManager} of the system to register for pressure sensor updates.
+     */
     private final SensorManager mSensorManager;
+    /**
+     * The actual system {@link Sensor}.
+     */
     private final Sensor mPressureSensor;
+    /**
+     * Callback for {@link Sensor} events.
+     */
     private final SensorEventCallback mSensorCallback = new SensorEventCallback() {
         @Override
         public void onAccuracyChanged(final Sensor sensor, final int accuracy) {
@@ -28,19 +41,23 @@ public class PressureSensor extends AbstractSensor<Float> {
         public void onSensorChanged(final SensorEvent event) {
             final float val = event.values[0];
             long millis = System.currentTimeMillis();
-            mPressure = mPressure * 4 + val;
-            mPressure = mPressure / 5;
             if (millis - mTimeStamp > getUpdateFrequency()) {
-                Log.d(TAG, "onSensorChanged: update: " + mPressure);
-                notifyObserver(mPressure);
+                Log.d(TAG, "onSensorChanged: update: " + val);
+                notifyObserver(val);
                 mTimeStamp = millis;
             }
         }
     };
-
+    /**
+     * The time stamp of the last update.
+     */
     private long mTimeStamp;
-    private float mPressure;
 
+    /**
+     * Constructor taking the {@link Context} to get the {@link Sensor}s from.
+     *
+     * @param context the {@link Context}
+     */
     PressureSensor(@NonNull final Context context) {
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         mPressureSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
@@ -66,5 +83,20 @@ public class PressureSensor extends AbstractSensor<Float> {
     protected void restartSensor() {
         stopSensor();
         startSensor();
+    }
+
+    /**
+     * Observer for the {@link PressureSensor}.
+     * TODO: consider making this more generic and remove the concrete implementation.
+     */
+    public abstract static class Observer extends AbstractSensor.Observer<Float> {
+        /**
+         * Constructor taking the update frequency
+         *
+         * @param updateFrequency the update frequency
+         */
+        public Observer(final long updateFrequency) {
+            super(updateFrequency, SensorType.PRESSURE);
+        }
     }
 }

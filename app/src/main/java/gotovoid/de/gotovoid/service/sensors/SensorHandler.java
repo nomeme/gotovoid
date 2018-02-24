@@ -1,37 +1,23 @@
 package gotovoid.de.gotovoid.service.sensors;
 
 import android.app.Application;
-import android.location.Location;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.RemoteException;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
-import java.text.DateFormat;
-import java.text.FieldPosition;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import gotovoid.de.gotovoid.database.AppDatabase;
-import gotovoid.de.gotovoid.database.model.Recording;
 import gotovoid.de.gotovoid.database.model.RecordingEntry;
-import gotovoid.de.gotovoid.service.communication.ServiceMessageHandler;
 
 /**
  * Created by DJ on 24/12/17.
  */
 
+/**
+ * Handler for {@link AbstractSensor} instances.
+ * Manages the available {@link AbstractSensor} instances and provides methods to
+ * register and unregister {@link AbstractSensor.Observer}s.
+ */
 public class SensorHandler {
     private static final String TAG = SensorHandler.class.getSimpleName();
 
@@ -48,14 +34,22 @@ public class SensorHandler {
      * Sensor for pressure data.
      */
     private final PressureSensor mPressureSensor;
-
+    /**
+     * Sensor for recording data.
+     */
     private final RecordingSensor mRecordingSensor;
+    /**
+     * Observer to write recording data to database.
+     */
     private final RecordingEntryObserver mRecordingEntryObserver;
-
+    /**
+     * {@link HandlerThread} for database interaction.
+     */
     private final HandlerThread mHandlerThread;
+    /**
+     * {@link Handler} for database interaction.
+     */
     private final Handler mHandler;
-
-    private long mUpdateInterval = 5000;
 
     /**
      * Constructor taking the {@link Application} as context.
@@ -77,78 +71,105 @@ public class SensorHandler {
         mDatabase = AppDatabase.getDatabaseInstance(application);
     }
 
+    /**
+     * Start recording data for the {@link gotovoid.de.gotovoid.database.model.Recording} with
+     * the given id.
+     *
+     * @param recordingId id of the {@link gotovoid.de.gotovoid.database.model.Recording}
+     */
     public void startRecording(final long recordingId) {
         Log.d(TAG, "startRecording() called with: recordingId = [" + recordingId + "]");
         // TODO: remove
         mHandler.post(new Runnable() {
             @Override
             public void run() {
-                // TODO: make updateable
                 Log.d(TAG, "run: start recording");
                 try {
+                    // TODO: make updateable
                     mRecordingSensor.setCalibratedAltitude(
                             mDatabase.getCalibratedPressureDao().getCalibratedPressure());
                     mRecordingSensor.startRecording(recordingId);
                 } catch (final IllegalStateException exception) {
                     Log.e(TAG, "run: start recording failed: ", exception);
                 }
-
             }
         });
     }
 
+    /**
+     * Stop recording.
+     */
     public void stopRecording() {
-        // TODO: remove
         mRecordingSensor.stopRecording();
     }
 
+    /**
+     * Add the given {@link AbstractSensor.Observer} for an {@link AbstractSensor}.
+     *
+     * @param observer the {@link AbstractSensor.Observer}
+     */
     public void addObserver(@NonNull final AbstractSensor.Observer observer) {
-        if (observer instanceof PressureObserver) {
+        Log.d(TAG, "addObserver() called with: observer = [" + observer + "]");
+        // TODO: maybe we should not use references to concrete implementations here
+        if (observer instanceof PressureSensor.Observer) {
             mPressureSensor.addObserver(observer);
         }
-        if (observer instanceof LocationObserver) {
+        if (observer instanceof LocationSensor.Observer) {
             mLocationSensor.addObserver(observer);
         }
-        if (observer instanceof RecordingObserver) {
+        if (observer instanceof RecordingSensor.Observer) {
             mRecordingSensor.addObserver(observer);
         }
     }
 
+    /**
+     * Remove the given {@link AbstractSensor.Observer}.
+     *
+     * @param observer {@link AbstractSensor.Observer} to be removed
+     */
     public void removeObserver(@NonNull final AbstractSensor.Observer observer) {
-        if (observer instanceof PressureObserver) {
+        Log.d(TAG, "removeObserver() called with: observer = [" + observer + "]");
+        // TODO: maybe we should not use references to concrete implementations here
+        if (observer instanceof PressureSensor.Observer) {
             mPressureSensor.removeObserver(observer);
         }
-        if (observer instanceof LocationObserver) {
+        if (observer instanceof LocationSensor.Observer) {
             mLocationSensor.removeObserver(observer);
         }
-        if (observer instanceof RecordingObserver) {
+        if (observer instanceof RecordingSensor.Observer) {
             mRecordingSensor.removeObserver(observer);
         }
     }
 
-    public void setUpdateInterval(final long updateInterval) {
-        // TODO: restart sensor listeners
-        mUpdateInterval = updateInterval;
-    }
-
+    /**
+     * Returns true if currently recording.
+     *
+     * @return true if recording
+     */
     public boolean isRecording() {
         return mRecordingSensor.isStarted();
     }
 
+    /**
+     * Stop all sensors.
+     */
     public void stopSensors() {
         mHandlerThread.quitSafely();
     }
 
-    public interface LocationObserver extends AbstractSensor.Observer<Location> {
-    }
+    /**
+     * This {@link AbstractSensor.Observer} implementation takes care of storing
+     * {@link gotovoid.de.gotovoid.database.model.Recording} data in the database.
+     * TODO: maybe we can simplify this if we move it to the sensor
+     */
+    private class RecordingEntryObserver extends AbstractSensor.Observer<RecordingEntry> {
+        /**
+         * Constructor.
+         */
+        public RecordingEntryObserver() {
+            super(0, SensorType.RECORDING);
+        }
 
-    public interface PressureObserver extends AbstractSensor.Observer<Float> {
-    }
-
-    public interface RecordingObserver extends AbstractSensor.Observer<Long> {
-    }
-
-    private class RecordingEntryObserver implements AbstractSensor.Observer<RecordingEntry> {
         @Override
         public void onChange(@NonNull final RecordingEntry recordingEntry) {
             Log.d(TAG, "onChange() called with: recordingEntry = [" + recordingEntry + "]");

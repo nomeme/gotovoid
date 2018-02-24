@@ -119,14 +119,14 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
     @Override
     public void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume() called", new NullPointerException());
-        mViewModel.startRecording(getContext().getApplicationContext(), Recording.Type.HIKE);
+        Log.d(TAG, "onResume() called");
+        mViewModel.startRecording(Recording.Type.HIKE);
     }
 
     @Override
     public void onPause() {
         Log.d(TAG, "onPause: ");
-        mViewModel.stopRecording(getContext().getApplicationContext());
+        mViewModel.stopRecording();
         super.onPause();
     }
 

@@ -34,6 +34,7 @@ import gotovoid.de.gotovoid.R;
 import gotovoid.de.gotovoid.database.model.RecordingEntry;
 import gotovoid.de.gotovoid.database.model.RecordingWithEntries;
 import gotovoid.de.gotovoid.domain.model.GPXSerializer;
+import gotovoid.de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
 import gotovoid.de.gotovoid.domain.model.geodata.GeoCoordinate;
 import gotovoid.de.gotovoid.service.repository.LocationRepository;
 import gotovoid.de.gotovoid.view.model.RecordingDisplayViewModel;
@@ -188,9 +189,9 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
             mAdapter.setHeaderData(new GeoCoordinateHolder(coords, null));
         } else {
             mModel.getLocation().observe(RecordingDisplayFragment.this,
-                    new Observer<Location>() {
+                    new Observer<ExtendedGeoCoordinate>() {
                         @Override
-                        public void onChanged(@Nullable final Location location) {
+                        public void onChanged(@Nullable final ExtendedGeoCoordinate location) {
                             Log.d(TAG, "onChanged() called with: location = ["
                                     + location + "]");
                             final GeoCoordinateHolder data = mAdapter.getHeaderData();
@@ -293,7 +294,7 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
                 }
                 // This is needed in order to display the current location.
                 final GeoCoordinateHolder old = mAdapter.getHeaderData();
-                final Location location;
+                final ExtendedGeoCoordinate location;
                 if (old == null) {
                     location = null;
                 } else {
@@ -381,7 +382,7 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
      * Also takes the current location as {@link GeoCoordinate}.
      */
     private class GeoCoordinateHolder extends GenericDataHolder<List<GeoCoordinate>> {
-        private final Location mPosition;
+        private final ExtendedGeoCoordinate mPosition;
 
         /**
          * Constructor taking the {@link List} of {@link GeoCoordinate}s to display and the current
@@ -391,7 +392,7 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
          * @param position the current position as {@link GeoCoordinate}
          */
         public GeoCoordinateHolder(@Nullable final List<GeoCoordinate> entries,
-                                   @Nullable final Location position) {
+                                   @Nullable final ExtendedGeoCoordinate position) {
             super(Type.GEO_COORDINATES, entries);
             mPosition = position;
         }
@@ -401,7 +402,7 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
          *
          * @return the current position
          */
-        private Location getPosition() {
+        private ExtendedGeoCoordinate getPosition() {
             return mPosition;
         }
     }

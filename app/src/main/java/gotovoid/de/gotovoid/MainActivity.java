@@ -21,13 +21,13 @@ import android.widget.Button;
 import java.util.List;
 
 import gotovoid.de.gotovoid.repository.IRepositoryProvider;
-import gotovoid.de.gotovoid.service.communication.LocationServiceMessenger;
+import gotovoid.de.gotovoid.service.communication.SensorServiceMessenger;
 import gotovoid.de.gotovoid.service.repository.LocationRepository;
+import gotovoid.de.gotovoid.service.LocationService;
 import gotovoid.de.gotovoid.view.CalibratorFragment;
 import gotovoid.de.gotovoid.view.IUpdateableAmbientModeHandler;
 import gotovoid.de.gotovoid.view.RecorderFragment;
 import gotovoid.de.gotovoid.view.RecordingListFragment;
-import gotovoid.de.gotovoid.service.LocationService;
 
 public class MainActivity extends FragmentActivity
         // We need this to support AmbientMode, so the app is always visible
@@ -35,8 +35,9 @@ public class MainActivity extends FragmentActivity
         IRepositoryProvider {
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private LocationServiceMessenger mLocationServiceMessenger;
     private LocationRepository mLocationRepository;
+    private final SensorServiceMessenger mMessenger = new SensorServiceMessenger();
+
     /**
      * Controller for the ambient mode. Need this to check current ambient mode..
      */
@@ -162,15 +163,13 @@ public class MainActivity extends FragmentActivity
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
             }, R.string.request_write_external_storage_permission);
         }
-        //mServiceMessenger.doBind(getApplicationContext());
     }
 
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume: ");
-        mLocationServiceMessenger = new LocationServiceMessenger();
-        mLocationServiceMessenger.doBind(this);
-        mLocationRepository = new LocationRepository(mLocationServiceMessenger);
+        mMessenger.doBind(this);
+        mLocationRepository = new LocationRepository(mMessenger);
         super.onResume();
     }
 
@@ -193,7 +192,7 @@ public class MainActivity extends FragmentActivity
     @Override
     protected void onPause() {
         Log.d(TAG, "onPause() called");
-        mLocationServiceMessenger.doUnbind(this);
+        mMessenger.doUnbind(this);
         super.onPause();
     }
 
@@ -225,6 +224,7 @@ public class MainActivity extends FragmentActivity
         @Override
         public void onEnterAmbient(final Bundle ambientDetails) {
             super.onEnterAmbient(ambientDetails);
+
             Log.d(TAG, "onEnterAmbient() called with: ambientDetails = [" + ambientDetails + "]");
             List<Fragment> fragments = getSupportFragmentManager().getFragments();
             Log.d(TAG, "onEnterAmbient: fragments: " + fragments);
@@ -240,8 +240,7 @@ public class MainActivity extends FragmentActivity
             }
             mContentView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(),
                     R.color.background_default_ambient));
-            mLocationServiceMessenger.setAmbientMode(true);
-
+            mMessenger.setUpdatesEnabled(false);
             // Will be executed when ambient mode is entered
             // Reduce colors to black and white
             // disable anti aliasing getPaint().setAntiAlias(false)
@@ -249,6 +248,7 @@ public class MainActivity extends FragmentActivity
 
         @Override
         public void onExitAmbient() {
+
             Log.d(TAG, "onExitAmbient() called");
             List<Fragment> fragments = getSupportFragmentManager().getFragments();
             if (fragments.size() > 0) {
@@ -260,7 +260,7 @@ public class MainActivity extends FragmentActivity
             }
             mContentView.setBackgroundColor(ContextCompat.getColor(getApplicationContext(),
                     R.color.background_default));
-            mLocationServiceMessenger.setAmbientMode(false);
+            mMessenger.setUpdatesEnabled(true);
             // Will be executed when ambient mode is exited
             // restore normal state
         }

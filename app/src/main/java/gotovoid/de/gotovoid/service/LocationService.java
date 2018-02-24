@@ -15,19 +15,29 @@ import android.widget.Toast;
 
 import gotovoid.de.gotovoid.MainActivity;
 import gotovoid.de.gotovoid.R;
+import gotovoid.de.gotovoid.service.communication.ISensorService;
+import gotovoid.de.gotovoid.service.communication.SensorServiceBinder;
 import gotovoid.de.gotovoid.service.sensors.SensorHandler;
-import gotovoid.de.gotovoid.service.communication.ServiceMessageHandler;
 
 /**
  * Created by DJ on 22/12/17.
  */
 
+/**
+ * Service to provide continuous access to sensors.
+ */
 public class LocationService extends Service {
     private static final String TAG = LocationService.class.getSimpleName();
 
-
+    /**
+     * Notification to show the necessary notification to become foreground service.
+     */
     private NotificationManager mNotificationManager;
-    private ServiceMessageHandler mServiceMessenger;
+    /**
+     * Implementation of the {@link ISensorService} providing access via AIDL.
+     */
+    private ISensorService.Stub mBinder;
+
     /**
      * Instance taking care of collection of sensor data.
      */
@@ -48,7 +58,7 @@ public class LocationService extends Service {
         super.onCreate();
         Log.d(TAG, "onCreate: ");
         mSensorHandler = new SensorHandler(getApplication());
-        mServiceMessenger = new ServiceMessageHandler(mSensorHandler);
+        mBinder = new SensorServiceBinder(mSensorHandler);
         // TODO: move this to a client binding command response
         // This is necessary for the location service to run as foreground service.
 
@@ -69,7 +79,7 @@ public class LocationService extends Service {
     @Override
     public boolean stopService(final Intent name) {
         Log.d(TAG, "stopService() called with: name = [" + name + "]");
-        if(mSensorHandler.isRecording()) {
+        if (mSensorHandler.isRecording()) {
             return false;
         }
         return super.stopService(name);
@@ -78,7 +88,7 @@ public class LocationService extends Service {
     @Nullable
     @Override
     public IBinder onBind(final Intent intent) {
-        return mServiceMessenger.getBinder();
+        return mBinder;
     }
 
     /**
@@ -90,6 +100,9 @@ public class LocationService extends Service {
         return getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS);
     }
 
+    /**
+     * Shows the notification to become foreground service.
+     */
     private void showNotification() {
         Log.d(TAG, "showNotification: ");
         // This was created for api 26 so the service is not terminated
@@ -124,7 +137,6 @@ public class LocationService extends Service {
                 .setContentText(text)
                 .setContentIntent(contentIntent)
                 .build();
-
 
         if (Build.VERSION.SDK_INT >= 26) {
             Log.d(TAG, "showNotification: start Foreground");
