@@ -5,6 +5,7 @@ import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.wear.widget.SwipeDismissFrameLayout;
 import android.support.wear.widget.SwipeDismissFrameLayout.Callback;
 import android.util.Log;
@@ -16,23 +17,37 @@ import android.widget.TextView;
 import gotovoid.de.gotovoid.R;
 import gotovoid.de.gotovoid.service.repository.LocationRepository;
 import gotovoid.de.gotovoid.view.model.CalibratorViewModel;
+/**
+ * Created by DJ on 22/12/17.
+ */
 
 /**
  * This {@link Fragment} displays the current pressure and altitude and allow for calibration
  * of the current altitude.
  * <p>
- * Created by DJ on 22/12/17.
  */
-
-public class CalibratorFragment extends Fragment {
+public class CalibratorFragment extends Fragment implements IUpdateableAmbientModeHandler {
     private static final String TAG = CalibratorFragment.class.getSimpleName();
+    /**
+     * {@link android.arch.lifecycle.ViewModel} for the {@link CalibratorFragment}.
+     */
     private CalibratorViewModel mViewModel;
-
+    /**
+     * View to handle circular input.
+     */
     private CircularProgress mProgress;
+    /**
+     * {@link TextView} for the altitude.
+     */
     private TextView mAltitudeText;
+    /**
+     * {@link TextView} for the pressure.
+     */
     private TextView mPressureText;
+    /**
+     * Layout for dismissing the fragment via swipe.
+     */
     private SwipeDismissFrameLayout mDismissLayout;
-
 
     @Override
     public void onCreate(@Nullable final Bundle savedInstanceState) {
@@ -143,7 +158,7 @@ public class CalibratorFragment extends Fragment {
 
     @Override
     public void onResume() {
-        Log.d(TAG, "onResume() called", new NullPointerException());
+        Log.d(TAG, "onResume() called");
         super.onResume();
         mProgress.requestFocus();
     }
@@ -156,5 +171,28 @@ public class CalibratorFragment extends Fragment {
             mViewModel.persistCalibratedAltitude();
         }
         super.onPause();
+    }
+
+    @Override
+    public void setIsAmbient(final boolean isAmbient) {
+        mProgress.setIsAmbient(isAmbient);
+        if (isAmbient) {
+            mDismissLayout.setBackgroundColor(
+                    ContextCompat.getColor(getContext(), R.color.black));
+            mAltitudeText.getPaint().setAntiAlias(false);
+            mPressureText.getPaint().setAntiAlias(false);
+        } else {
+            mDismissLayout.setBackgroundColor(
+                    ContextCompat.getColor(getContext(), R.color.background_default));
+            mAltitudeText.getPaint().setAntiAlias(true);
+            mPressureText.getPaint().setAntiAlias(true);
+        }
+    }
+
+    @Override
+    public void onUpdateAmbient() {
+        Log.d(TAG, "onUpdateAmbient() called");
+        showAltitude(mViewModel.getAltitude().getValue());
+        showPressure(mViewModel.getPressure().getValue());
     }
 }
