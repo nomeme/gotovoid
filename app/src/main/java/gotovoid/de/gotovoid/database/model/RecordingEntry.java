@@ -4,6 +4,7 @@ import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
 
 /**
@@ -14,6 +15,7 @@ import android.arch.persistence.room.PrimaryKey;
  * Created by DJ on 22/12/17.
  */
 @Entity(tableName = "recording_entry",
+        indices = {@Index(value = "recording_id", name = "recording")},
         foreignKeys = @ForeignKey(entity = Recording.class,
                 parentColumns = "id",
                 childColumns = "recording_id",

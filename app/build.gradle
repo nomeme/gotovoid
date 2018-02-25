@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 27
     defaultConfig {
         applicationId "gotovoid.de.gotovoid"
         minSdkVersion 25
@@ -39,7 +39,7 @@ dependencies {
     annotationProcessor "android.arch.persistence.room:compiler:1.0.0"
 
     // LiveData
-    compile "com.android.support.constraint:constraint-layout:1.0.2"
+    implementation "com.android.support.constraint:constraint-layout:1.0.2"
 
     compileOnly 'com.google.android.wearable:wearable:2.1.0'
 }

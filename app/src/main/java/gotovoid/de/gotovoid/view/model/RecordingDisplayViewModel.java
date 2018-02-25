@@ -14,6 +14,7 @@ import gotovoid.de.gotovoid.database.model.RecordingEntry;
 import gotovoid.de.gotovoid.database.model.RecordingWithEntries;
 import gotovoid.de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
 import gotovoid.de.gotovoid.service.repository.LocationRepository;
+
 /**
  * Created by DJ on 05/01/18.
  */
