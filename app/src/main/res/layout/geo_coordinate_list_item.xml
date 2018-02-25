@@ -14,7 +14,7 @@
         android:padding="5dp"
         app:boxedEdges="all">
 
-        <gotovoid.de.gotovoid.view.GeoCoordinateView
+        <de.gotovoid.view.GeoCoordinateView
             android:id="@+id/coordinate_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>

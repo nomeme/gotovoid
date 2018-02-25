@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="gotovoid.de.gotovoid">
+    package="de.gotovoid">
 
     <uses-feature android:name="android.hardware.type.watch" />
 
@@ -28,7 +28,7 @@
             android:value="true" />
 
         <activity
-            android:name=".MainActivity"
+            android:name="de.gotovoid.MainActivity"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,7 +39,7 @@
         <!-- As long as there is no fix, keep service in same process! -->
         <!--<service android:name=".services.LocationService"/>-->
         <service
-            android:name=".service.LocationService"
+            android:name="de.gotovoid.service.LocationService"
             android:process=":location" />
     </application>
 
