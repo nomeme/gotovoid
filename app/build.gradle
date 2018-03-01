@@ -49,6 +49,14 @@ dependencies {
     compileOnly 'com.google.android.wearable:wearable:2.1.0'
 
     // Tests
-    androidTestImplementation "com.android.support.test:runner:1.0.1"
-    androidTestUtil "com.android.support.test:orchestrator:1.0.1"
+    testCompile "com.android.support:support-annotations:27.0.0"
+    testCompile "com.android.support.test:runner:1.0.1"
+    testCompile "com.android.support.test:rules:1.0.1"
+    testCompile "org.robolectric:robolectric:3.3.2"
+    testCompile "org.powermock:powermock:1.6.5"
+    testCompile "org.powermock:powermock-api-mockito:1.6.5"
+    testCompile "org.powermock:powermock-module-junit4:1.6.5"
+    //androidTestUtil "com.android.support.test:orchestrator:1.0.1"
+    testCompile 'junit:junit:4.12'
+
 }

@@ -27,6 +27,11 @@ public class PressureSensor extends AbstractSensor<Float> {
      */
     private final Sensor mPressureSensor;
     /**
+     * The time stamp of the last update.
+     */
+    @Deprecated
+    private long mTimeStamp;
+    /**
      * Callback for {@link Sensor} events.
      */
     private final SensorEventCallback mSensorCallback = new SensorEventCallback() {
@@ -39,6 +44,9 @@ public class PressureSensor extends AbstractSensor<Float> {
 
         @Override
         public void onSensorChanged(final SensorEvent event) {
+            if (event == null || event.values == null || event.values.length == 0) {
+                return;
+            }
             final float val = event.values[0];
             long millis = System.currentTimeMillis();
             if (millis - mTimeStamp > getUpdateFrequency()) {
@@ -48,10 +56,6 @@ public class PressureSensor extends AbstractSensor<Float> {
             }
         }
     };
-    /**
-     * The time stamp of the last update.
-     */
-    private long mTimeStamp;
 
     /**
      * Constructor taking the {@link Context} to get the {@link Sensor}s from.
@@ -83,6 +87,15 @@ public class PressureSensor extends AbstractSensor<Float> {
     protected void restartSensor() {
         stopSensor();
         startSensor();
+    }
+
+    /**
+     * Return the {@link SensorEventCallback} instance.
+     *
+     * @return the {@link SensorEventCallback}
+     */
+    protected SensorEventCallback getSensorCallback() {
+        return mSensorCallback;
     }
 
     /**

@@ -45,6 +45,9 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
         public void onLocationResult(final LocationResult locationResult) {
             Log.d(TAG, "onLocationResult() called with: locationResult = ["
                     + locationResult + "]");
+            if (locationResult == null || locationResult.getLastLocation() == null) {
+                return;
+            }
             Location location = locationResult.getLastLocation();
             final ExtendedGeoCoordinate coordinate = new ExtendedGeoCoordinate(location.getLatitude(),
                     location.getLongitude(),
@@ -62,8 +65,19 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
      *
      * @param context the {@link Context} to request location data for
      */
+    @Deprecated
     LocationSensor(final Context context) {
         mLocationProvider = LocationServices.getFusedLocationProviderClient(context);
+    }
+
+    /**
+     * Package private constructor taking the {@link FusedLocationProviderClient} to register
+     * for updates.
+     *
+     * @param provider the {@link FusedLocationProviderClient} to register at
+     */
+    LocationSensor(final FusedLocationProviderClient provider) {
+        mLocationProvider = provider;
     }
 
     @Override
@@ -85,7 +99,7 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
                 Log.e(TAG, "startSensor: no permissions");
                 return;
             }
-            mLocationProvider.requestLocationUpdates(request,
+            getLocationProvider().requestLocationUpdates(request,
                     mLocationCallback,
                     Looper.getMainLooper());
         }
@@ -95,14 +109,22 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
     protected void stopSensor() {
         Log.d(TAG, "stopSensor() called");
         if (mLocationProvider != null) {
-            mLocationProvider.removeLocationUpdates(mLocationCallback);
+            getLocationProvider().removeLocationUpdates(mLocationCallback);
         }
     }
 
     @Override
     protected void restartSensor() {
-        mLocationProvider.removeLocationUpdates(mLocationCallback);
+        stopSensor();
         startSensor();
+    }
+
+    protected FusedLocationProviderClient getLocationProvider() {
+        return mLocationProvider;
+    }
+
+    protected LocationCallback getSensorCallback() {
+        return mLocationCallback;
     }
 
     /**

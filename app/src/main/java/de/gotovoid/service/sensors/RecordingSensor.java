@@ -23,11 +23,11 @@ public class RecordingSensor extends AbstractSensor<Long> {
     /**
      * The {@link AbstractSensor.Observer} for the {@link PressureSensor}.
      */
-    private AbstractSensor.Observer<Float> mPressureObserver;
+    private PressureObserver mPressureObserver;
     /**
      * The {@link AbstractSensor.Observer} for the {@link LocationSensor}.
      */
-    private AbstractSensor.Observer<ExtendedGeoCoordinate> mLocationObserver;
+    private LocationObserver mLocationObserver;
     /**
      * The {@link PressureSensor} providing altitude data.
      */
@@ -91,8 +91,8 @@ public class RecordingSensor extends AbstractSensor<Long> {
     public void startRecording(final long recordingId) {
         Log.d(TAG, "startRecording() called with: recordingId = [" + recordingId + "]");
         mRecordingId = recordingId;
-        mPressureObserver = new PressureObserver(1000);
-        mLocationObserver = new LocationObserver(1000);
+        mPressureObserver = new PressureObserver(getUpdateFrequency());
+        mLocationObserver = new LocationObserver(getUpdateFrequency());
         mPressureSensor.addObserver(mPressureObserver);
         mLocationSensor.addObserver(mLocationObserver);
     }
@@ -105,8 +105,6 @@ public class RecordingSensor extends AbstractSensor<Long> {
         mRecordingId = null;
         mPressureSensor.removeObserver(mPressureObserver);
         mLocationSensor.removeObserver(mLocationObserver);
-        mPressureObserver = null;
-        mLocationObserver = null;
     }
 
     @Override
@@ -124,11 +122,19 @@ public class RecordingSensor extends AbstractSensor<Long> {
         // Do nothing
     }
 
+    protected PressureObserver getPressureObserver() {
+        return mPressureObserver;
+    }
+
+    protected LocationObserver getLocationObserver() {
+        return mLocationObserver;
+    }
+
     /**
      * Observer for location data updates.
      * Will notify the {@link RecordingSensor} observer.
      */
-    private class LocationObserver extends LocationSensor.Observer {
+    protected class LocationObserver extends LocationSensor.Observer {
         /**
          * Constructor taking the update frequency.
          *
@@ -141,7 +147,8 @@ public class RecordingSensor extends AbstractSensor<Long> {
         @Override
         public void onChange(@NonNull final ExtendedGeoCoordinate extendedGeoCoordinate) {
             Log.d(TAG, "onChange() called with: extendedGeoCoordinate = [" + extendedGeoCoordinate + "]");
-            if (mAltitude != null
+            if (extendedGeoCoordinate != null
+                    && mAltitude != null
                     && mRecordingEntryObserver != null
                     && mRecordingId != null) {
                 // Create a new RecordingEntry
@@ -164,7 +171,7 @@ public class RecordingSensor extends AbstractSensor<Long> {
      * Observer for pressure data.
      * Will store the current pressure in a member variable
      */
-    private class PressureObserver extends PressureSensor.Observer {
+    protected class PressureObserver extends PressureSensor.Observer {
         /**
          * Constructor taking the update frequency.
          *

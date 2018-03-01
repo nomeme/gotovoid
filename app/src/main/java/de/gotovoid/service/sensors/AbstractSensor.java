@@ -51,7 +51,15 @@ public abstract class AbstractSensor<T> {
                 }
             }
         }
+    }
 
+    /**
+     * Returns the registered {@link Observer}s.
+     *
+     * @return the {@link Observer}s
+     */
+    protected List<Observer<T>> getObservers() {
+        return mObservers;
     }
 
     /**
@@ -155,7 +163,7 @@ public abstract class AbstractSensor<T> {
      * @param <Type> Type of the sensor data
      */
     public static abstract class Observer<Type> {
-        private static final long UPDATE_FREQUENCY_TOLERANCE = 50;
+        private static final long UPDATE_FREQUENCY_TOLERANCE = 30;
         private final long mUpdateFrequency;
         // TODO: check if this is needed
         private final SensorType mType;
@@ -216,7 +224,7 @@ public abstract class AbstractSensor<T> {
          */
         private boolean canUpdate() {
             final long timeDiff = System.currentTimeMillis() - mLastUpdate;
-            return timeDiff + mUpdateFrequency > -UPDATE_FREQUENCY_TOLERANCE;
+            return timeDiff - getUpdateFrequency() > -UPDATE_FREQUENCY_TOLERANCE;
         }
     }
 }
