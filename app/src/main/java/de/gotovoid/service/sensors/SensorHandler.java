@@ -6,6 +6,8 @@ import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.google.android.gms.location.LocationServices;
+
 import de.gotovoid.database.model.Recording;
 import de.gotovoid.database.AppDatabase;
 import de.gotovoid.database.model.RecordingEntry;
@@ -58,7 +60,8 @@ public class SensorHandler {
      * @param application the {@link Application}
      */
     public SensorHandler(final Application application) {
-        mLocationSensor = new LocationSensor(application);
+        mLocationSensor = new LocationSensor(LocationServices
+                .getFusedLocationProviderClient(application));
         mPressureSensor = new PressureSensor(application);
         mRecordingEntryObserver = new RecordingEntryObserver();
         mRecordingSensor = new RecordingSensor(mPressureSensor,
@@ -70,6 +73,18 @@ public class SensorHandler {
         mHandler = new Handler(mHandlerThread.getLooper());
 
         mDatabase = AppDatabase.getDatabaseInstance(application);
+    }
+
+    LocationSensor getLocationSensor() {
+        return mLocationSensor;
+    }
+
+    PressureSensor getPressureSensor() {
+        return mPressureSensor;
+    }
+
+    RecordingSensor getRecordingSensor() {
+        return mRecordingSensor;
     }
 
     /**
