@@ -134,14 +134,14 @@ public class RecordingSensor extends AbstractSensor<Long> {
      * Observer for location data updates.
      * Will notify the {@link RecordingSensor} observer.
      */
-    protected class LocationObserver extends LocationSensor.Observer {
+    protected class LocationObserver extends AbstractSensor.Observer<ExtendedGeoCoordinate> {
         /**
          * Constructor taking the update frequency.
          *
          * @param updateFrequency the update frequency
          */
         public LocationObserver(long updateFrequency) {
-            super(updateFrequency);
+            super(updateFrequency, SensorType.LOCATION);
         }
 
         @Override
@@ -171,14 +171,14 @@ public class RecordingSensor extends AbstractSensor<Long> {
      * Observer for pressure data.
      * Will store the current pressure in a member variable
      */
-    protected class PressureObserver extends PressureSensor.Observer {
+    protected class PressureObserver extends AbstractSensor.Observer<Float> {
         /**
          * Constructor taking the update frequency.
          *
          * @param updateFrequency the update frequency
          */
         public PressureObserver(long updateFrequency) {
-            super(updateFrequency);
+            super(updateFrequency, SensorType.PRESSURE);
         }
 
         @Override
@@ -189,21 +189,6 @@ public class RecordingSensor extends AbstractSensor<Long> {
                 return;
             }
             mAltitude = mCalibratedAltitude.calculateHeight(pressure);
-        }
-    }
-
-    /**
-     * Observer for the {@link RecordingSensor}.
-     * TODO: consider removing this in order to make it more generic
-     */
-    public abstract static class Observer extends AbstractSensor.Observer<Long> {
-        /**
-         * Constructor taking the update frequency.
-         *
-         * @param updateFrequency the update frequency
-         */
-        public Observer(final long updateFrequency) {
-            super(updateFrequency, SensorType.RECORDING);
         }
     }
 }

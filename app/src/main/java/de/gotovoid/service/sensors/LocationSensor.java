@@ -127,18 +127,5 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
         return mLocationCallback;
     }
 
-    /**
-     * Observer for the {@link LocationSensor}.
-     * TODO: consider making this more generic and remove the concrete implementation.
-     */
-    public static abstract class Observer extends AbstractSensor.Observer<ExtendedGeoCoordinate> {
-        /**
-         * Constructor taking the update frequency.
-         *
-         * @param updateFrequency the update frequency
-         */
-        public Observer(long updateFrequency) {
-            super(updateFrequency, SensorType.LOCATION);
-        }
-    }
+
 }

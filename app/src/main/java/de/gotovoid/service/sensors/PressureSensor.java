@@ -98,18 +98,4 @@ public class PressureSensor extends AbstractSensor<Float> {
         return mSensorCallback;
     }
 
-    /**
-     * Observer for the {@link PressureSensor}.
-     * TODO: consider making this more generic and remove the concrete implementation.
-     */
-    public abstract static class Observer extends AbstractSensor.Observer<Float> {
-        /**
-         * Constructor taking the update frequency
-         *
-         * @param updateFrequency the update frequency
-         */
-        public Observer(final long updateFrequency) {
-            super(updateFrequency, SensorType.PRESSURE);
-        }
-    }
 }

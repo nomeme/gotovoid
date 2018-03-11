@@ -46,6 +46,7 @@ public class SensorHandlerTest {
     @Test
     public void testAddLocationObserver() {
         LocationSensor.Observer observer = Mockito.mock(LocationSensor.Observer.class);
+        Mockito.when(observer.getType()).thenReturn(SensorType.LOCATION);
         assertThat(mSensorHandler.getLocationSensor().isStarted(), is(false));
         mSensorHandler.addObserver(observer);
         assertThat(mSensorHandler.getLocationSensor().isStarted(), is(true));
@@ -57,6 +58,7 @@ public class SensorHandlerTest {
     @Test
     public void testRemoveLocationObserver() {
         LocationSensor.Observer observer = Mockito.mock(LocationSensor.Observer.class);
+        Mockito.when(observer.getType()).thenReturn(SensorType.LOCATION);
         mSensorHandler.addObserver(observer);
         assertThat(mSensorHandler.getLocationSensor().isStarted(), is(true));
         mSensorHandler.removeObserver(observer);
@@ -69,6 +71,7 @@ public class SensorHandlerTest {
     @Test
     public void testAddPressureObserver() {
         PressureSensor.Observer observer = Mockito.mock(PressureSensor.Observer.class);
+        Mockito.when(observer.getType()).thenReturn(SensorType.PRESSURE);
         assertThat(mSensorHandler.getPressureSensor().isStarted(), is(false));
         mSensorHandler.addObserver(observer);
         assertThat(mSensorHandler.getPressureSensor().isStarted(), is(true));
@@ -80,6 +83,7 @@ public class SensorHandlerTest {
     @Test
     public void testRemovePressureObserver() {
         PressureSensor.Observer observer = Mockito.mock(PressureSensor.Observer.class);
+        Mockito.when(observer.getType()).thenReturn(SensorType.PRESSURE);
         mSensorHandler.addObserver(observer);
         assertThat(mSensorHandler.getPressureSensor().isStarted(), is(true));
         mSensorHandler.removeObserver(observer);
@@ -92,6 +96,7 @@ public class SensorHandlerTest {
     @Test
     public void testAddRecordingObserver() {
         RecordingSensor.Observer observer = Mockito.mock(RecordingSensor.Observer.class);
+        Mockito.when(observer.getType()).thenReturn(SensorType.RECORDING);
         assertThat(mSensorHandler.getRecordingSensor().isStarted(), is(false));
         mSensorHandler.addObserver(observer);
         assertThat(mSensorHandler.getRecordingSensor().isStarted(), is(true));
@@ -103,6 +108,7 @@ public class SensorHandlerTest {
     @Test
     public void testRemoveRecordingObserver() {
         RecordingSensor.Observer observer = Mockito.mock(RecordingSensor.Observer.class);
+        Mockito.when(observer.getType()).thenReturn(SensorType.RECORDING);
         mSensorHandler.addObserver(observer);
         assertThat(mSensorHandler.getRecordingSensor().isStarted(), is(true));
         mSensorHandler.removeObserver(observer);

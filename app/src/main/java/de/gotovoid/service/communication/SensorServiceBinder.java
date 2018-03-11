@@ -5,15 +5,13 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseArray;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 import de.gotovoid.service.sensors.AbstractSensor;
-import de.gotovoid.service.sensors.PressureSensor;
 import de.gotovoid.service.sensors.SensorHandler;
 import de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
-import de.gotovoid.service.sensors.LocationSensor;
-import de.gotovoid.service.sensors.RecordingSensor;
 import de.gotovoid.service.sensors.SensorType;
 
 /**
@@ -47,6 +45,11 @@ public class SensorServiceBinder extends ISensorService.Stub {
      * TODO: maybe consider moving this into the Callbacks
      */
     private boolean mIsUpdatePaused;
+
+    /**
+     * True if there was a request to start a new recording.
+     */
+    private boolean mIsRecordingStartRequested;
 
     /**
      * Create a new instance of the {@link SensorServiceBinder} using the given
@@ -99,12 +102,20 @@ public class SensorServiceBinder extends ISensorService.Stub {
 
     @Override
     public void startRecording(long recordingId) throws RemoteException {
-        mSensorHandler.startRecording(recordingId);
+        synchronized (mLock) {
+            if (!mIsRecordingStartRequested) {
+                mIsRecordingStartRequested = true;
+                mSensorHandler.startRecording(recordingId);
+            }
+        }
     }
 
     @Override
     public void stopRecording() throws RemoteException {
-        mSensorHandler.stopRecording();
+        synchronized (mLock) {
+            mIsRecordingStartRequested = false;
+            mSensorHandler.stopRecording();
+        }
     }
 
     /**
@@ -176,6 +187,12 @@ public class SensorServiceBinder extends ISensorService.Stub {
         }
     }
 
+    /**
+     * Returns the {@link Callback} for the given {@link CallbackRegistration}.
+     *
+     * @param registration the {@link CallbackRegistration}
+     * @return the {@link Callback}
+     */
     Callback getCallback(final CallbackRegistration registration) {
         if (registration == null || registration.getType() == null) {
             return null;
@@ -205,72 +222,66 @@ public class SensorServiceBinder extends ISensorService.Stub {
             return null;
         }
         final AbstractSensor.Observer observer;
-        // Create an Observer for a sensor to be stored and managed.
         switch (registration.getType()) {
             case PRESSURE:
-                observer = new PressureSensor.Observer(registration.getUpdateFrequency()) {
-                    @Override
-                    public void onChange(@NonNull final Float aFloat) {
-                        if (isUpdatePaused()) {
-                            return;
-                        }
-                        Log.d(TAG, "onChange() called with: aFloat = ["
-                                + aFloat + "]");
-                        // TODO: maybe we can generalize this.
-                        try {
-                            callback.onSensorValueChanged(new Response<>(aFloat));
-                        } catch (final RemoteException exception) {
-                            Log.e(TAG, "onChange: ", exception);
-                        }
-                    }
-                };
+                observer = new SensorObserver<Float>(
+                        callback,
+                        registration.getUpdateFrequency(),
+                        registration.getType());
                 break;
             case LOCATION:
-                observer = new LocationSensor.Observer(registration.getUpdateFrequency()) {
-                    @Override
-                    public void onChange(@NonNull final ExtendedGeoCoordinate location) {
-                        if (isUpdatePaused()) {
-                            return;
-                        }
-                        Log.d(TAG, "onChange() called with: location = ["
-                                + location + "]");
-                        // TODO: maybe we can generalize this.
-                        Log.d(TAG, "onChange: ");
-                        try {
-                            callback.onSensorValueChanged(new Response(location));
-                        } catch (final RemoteException exception) {
-                            Log.e(TAG, "onChange: ", exception);
-                        }
-                    }
-                };
+                observer = new SensorObserver<ExtendedGeoCoordinate>(
+                        callback,
+                        registration.getUpdateFrequency(),
+                        registration.getType());
                 break;
             case RECORDING:
-                observer = new RecordingSensor.Observer(registration.getUpdateFrequency()) {
-                    @Override
-                    public void onChange(@NonNull final Long recordingId) {
-                        if (isUpdatePaused()) {
-                            return;
-                        }
-                        Log.d(TAG, "onChange() called with: recordingId = ["
-                                + recordingId + "]");
-                        // TODO: maybe we can generalize this.
-                        try {
-                            callback.onSensorValueChanged(new Response(recordingId));
-                        } catch (final RemoteException exception) {
-                            Log.e(TAG, "onChange: ", exception);
-                        }
-                    }
-                };
+                observer = new SensorObserver<Long>(
+                        callback,
+                        registration.getUpdateFrequency(),
+                        registration.getType());
                 break;
             default:
                 observer = null;
                 break;
         }
+
+        // Create an Observer for a sensor to be stored and managed.
         if (observer == null) {
             return null;
         } else {
             // Create the Callback to be returned
             return new Callback(callback, observer);
+        }
+    }
+
+    private class SensorObserver<T extends Serializable> extends AbstractSensor.Observer<T> {
+        private ISensorServiceCallback mCallback;
+
+        /**
+         * Constructor taking the update frequency in milliseconds and {@link SensorType}.
+         *
+         * @param updateFrequency the update frequency requested by the {@link AbstractSensor.Observer}
+         * @param type            the {@link SensorType}
+         */
+        public SensorObserver(final ISensorServiceCallback callback,
+                              final long updateFrequency,
+                              final SensorType type) {
+            super(updateFrequency, type);
+            mCallback = callback;
+        }
+
+
+        @Override
+        public void onChange(@NonNull final T type) {
+            if (isUpdatePaused()) {
+                return;
+            }
+            try {
+                mCallback.onSensorValueChanged(new Response(type));
+            } catch (final RemoteException exception) {
+                Log.e(TAG, "onChange: ", exception);
+            }
         }
     }
 

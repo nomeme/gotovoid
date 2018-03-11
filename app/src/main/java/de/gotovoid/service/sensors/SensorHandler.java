@@ -75,15 +75,30 @@ public class SensorHandler {
         mDatabase = AppDatabase.getDatabaseInstance(application);
     }
 
-    LocationSensor getLocationSensor() {
+    /**
+     * Returns the {@link LocationSensor}.
+     *
+     * @return the {@link LocationSensor}
+     */
+    protected LocationSensor getLocationSensor() {
         return mLocationSensor;
     }
 
-    PressureSensor getPressureSensor() {
+    /**
+     * Returns the {@link PressureSensor}.
+     *
+     * @return the {@link PressureSensor}
+     */
+    protected PressureSensor getPressureSensor() {
         return mPressureSensor;
     }
 
-    RecordingSensor getRecordingSensor() {
+    /**
+     * Returns the {@link RecordingSensor}.
+     *
+     * @return the {@link RecordingSensor}
+     */
+    protected RecordingSensor getRecordingSensor() {
         return mRecordingSensor;
     }
 
@@ -127,14 +142,16 @@ public class SensorHandler {
     public void addObserver(@NonNull final AbstractSensor.Observer observer) {
         Log.d(TAG, "addObserver() called with: observer = [" + observer + "]");
         // TODO: maybe we should not use references to concrete implementations here
-        if (observer instanceof PressureSensor.Observer) {
-            mPressureSensor.addObserver(observer);
-        }
-        if (observer instanceof LocationSensor.Observer) {
-            mLocationSensor.addObserver(observer);
-        }
-        if (observer instanceof RecordingSensor.Observer) {
-            mRecordingSensor.addObserver(observer);
+        switch (observer.getType()) {
+            case PRESSURE:
+                mPressureSensor.addObserver(observer);
+                break;
+            case LOCATION:
+                mLocationSensor.addObserver(observer);
+                break;
+            case RECORDING:
+                mRecordingSensor.addObserver(observer);
+                break;
         }
     }
 
@@ -146,14 +163,16 @@ public class SensorHandler {
     public void removeObserver(@NonNull final AbstractSensor.Observer observer) {
         Log.d(TAG, "removeObserver() called with: observer = [" + observer + "]");
         // TODO: maybe we should not use references to concrete implementations here
-        if (observer instanceof PressureSensor.Observer) {
-            mPressureSensor.removeObserver(observer);
-        }
-        if (observer instanceof LocationSensor.Observer) {
-            mLocationSensor.removeObserver(observer);
-        }
-        if (observer instanceof RecordingSensor.Observer) {
-            mRecordingSensor.removeObserver(observer);
+        switch (observer.getType()) {
+            case PRESSURE:
+                mPressureSensor.removeObserver(observer);
+                break;
+            case LOCATION:
+                mLocationSensor.removeObserver(observer);
+                break;
+            case RECORDING:
+                mRecordingSensor.removeObserver(observer);
+                break;
         }
     }
 
