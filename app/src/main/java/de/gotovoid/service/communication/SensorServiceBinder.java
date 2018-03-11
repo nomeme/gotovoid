@@ -3,6 +3,7 @@ package de.gotovoid.service.communication;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.util.SparseArray;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -11,8 +12,6 @@ import de.gotovoid.service.sensors.AbstractSensor;
 import de.gotovoid.service.sensors.PressureSensor;
 import de.gotovoid.service.sensors.SensorHandler;
 import de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
-import de.gotovoid.service.communication.ISensorService;
-import de.gotovoid.service.communication.ISensorServiceCallback;
 import de.gotovoid.service.sensors.LocationSensor;
 import de.gotovoid.service.sensors.RecordingSensor;
 import de.gotovoid.service.sensors.SensorType;
@@ -33,7 +32,8 @@ public class SensorServiceBinder extends ISensorService.Stub {
      * {@link Map} containing references to the {@link Callback} referenced by {@link SensorType}
      * and {@link CallbackRegistration#getCallbackId()}.
      */
-    private final Map<SensorType, Map<Integer, Callback>> mCallbacks;
+    // TODO: use sparse array!
+    private final Map<SensorType, SparseArray<Callback>> mCallbacks;
     /**
      * Synchronization object.
      */
@@ -57,7 +57,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
     public SensorServiceBinder(final SensorHandler sensorHandler) {
         mCallbacks = new HashMap<>();
         for (SensorType type : SensorType.values()) {
-            mCallbacks.put(type, new HashMap());
+            mCallbacks.put(type, new SparseArray<Callback>());
         }
         mSensorHandler = sensorHandler;
     }
@@ -66,6 +66,12 @@ public class SensorServiceBinder extends ISensorService.Stub {
     public void setUpdatePaused(final boolean isUpdatePaused) throws RemoteException {
         synchronized (mLock) {
             mIsUpdatePaused = isUpdatePaused;
+        }
+    }
+
+    boolean isUpdatePaused() {
+        synchronized (mLock) {
+            return mIsUpdatePaused;
         }
     }
 
@@ -88,7 +94,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
     @Override
     public void requestUpdate(final CallbackRegistration registration)
             throws RemoteException {
-
+        // TODO:implement
     }
 
     @Override
@@ -120,12 +126,12 @@ public class SensorServiceBinder extends ISensorService.Stub {
         synchronized (mCallbacks) {
             // TODO: minimize synchronized block.
             // Get the map of callbacks for the appropriate SensorType
-            Map<Integer, Callback> callbacks = mCallbacks.get(registration.getType());
+            SparseArray<Callback> callbacks = mCallbacks.get(registration.getType());
             // Check whether the callback is already registered
             if (callbacks.get(registration.getCallbackId()) == null) {
                 Log.d(TAG, "addCallback: add new callback: " + registration.getType());
                 // Create a local Callback instance to be stored in the map
-                final Callback callback = getCallback(registration, sensorCallback);
+                final Callback callback = createCallback(registration, sensorCallback);
                 if (callback != null) {
                     // Store the Callback and register it with the SensorHandler.
                     callbacks.put(registration.getCallbackId(), callback);
@@ -152,20 +158,31 @@ public class SensorServiceBinder extends ISensorService.Stub {
         synchronized (mCallbacks) {
             // TODO: minimize synchronized block.
             // Get the appropriate map for the SensorType
-            Map<Integer, Callback> callbacks = mCallbacks.get(registration.getType());
+            SparseArray<Callback> callbacks = mCallbacks.get(registration.getType());
             // Check whether the Callback is actually managed.
             if (callbacks.get(registration.getCallbackId()) == null) {
                 Log.d(TAG, "removeCallback: callback not registered");
             } else {
                 // If the callback is managed, remove it from the managed Callbacks.
                 Log.d(TAG, "removeCallback: remove callback");
-                final Callback callback = callbacks.remove(registration.getCallbackId());
-                if (callbacks.isEmpty()) {
+                final Callback callback = callbacks.get(registration.getCallbackId());
+                callbacks.remove(registration.getCallbackId());
+                if (callbacks.size() == 0) {
                     // Then also remove it from the SensorHandler.
                     mSensorHandler.removeObserver(callback.getObserver());
                 }
             }
             Log.d(TAG, "removeCallback: callbacks: " + callbacks.size());
+        }
+    }
+
+    Callback getCallback(final CallbackRegistration registration) {
+        if (registration == null || registration.getType() == null) {
+            return null;
+        }
+        synchronized (mCallbacks) {
+            SparseArray<Callback> callbacks = mCallbacks.get(registration.getType());
+            return callbacks.get(registration.getCallbackId());
         }
     }
 
@@ -180,8 +197,8 @@ public class SensorServiceBinder extends ISensorService.Stub {
      * @param callback     the {@link ISensorServiceCallback}
      * @return a new {@link Callback} instance
      */
-    private Callback getCallback(@NonNull final CallbackRegistration registration,
-                                 @NonNull final ISensorServiceCallback callback) {
+    private Callback createCallback(@NonNull final CallbackRegistration registration,
+                                    @NonNull final ISensorServiceCallback callback) {
         Log.d(TAG, "getObserver() called with: type = [" + registration + "]");
         // Fail fast.
         if (registration == null || registration.getType() == null || callback == null) {
@@ -194,7 +211,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
                 observer = new PressureSensor.Observer(registration.getUpdateFrequency()) {
                     @Override
                     public void onChange(@NonNull final Float aFloat) {
-                        if (mIsUpdatePaused) {
+                        if (isUpdatePaused()) {
                             return;
                         }
                         Log.d(TAG, "onChange() called with: aFloat = ["
@@ -212,12 +229,11 @@ public class SensorServiceBinder extends ISensorService.Stub {
                 observer = new LocationSensor.Observer(registration.getUpdateFrequency()) {
                     @Override
                     public void onChange(@NonNull final ExtendedGeoCoordinate location) {
-                        if (mIsUpdatePaused) {
+                        if (isUpdatePaused()) {
                             return;
                         }
                         Log.d(TAG, "onChange() called with: location = ["
                                 + location + "]");
-                        Response<ExtendedGeoCoordinate> coord = new Response<>(location);
                         // TODO: maybe we can generalize this.
                         Log.d(TAG, "onChange: ");
                         try {
@@ -232,7 +248,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
                 observer = new RecordingSensor.Observer(registration.getUpdateFrequency()) {
                     @Override
                     public void onChange(@NonNull final Long recordingId) {
-                        if (mIsUpdatePaused) {
+                        if (isUpdatePaused()) {
                             return;
                         }
                         Log.d(TAG, "onChange() called with: recordingId = ["
@@ -261,7 +277,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
     /**
      * Data holder for the {@link AbstractSensor.Observer} and the {@link ISensorServiceCallback}.
      */
-    private class Callback {
+    class Callback {
         /**
          * The {@link ISensorServiceCallback} to for the service listener.
          */

@@ -3,7 +3,6 @@ package de.gotovoid.service.communication;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import de.gotovoid.service.communication.ISensorServiceCallback;
 import de.gotovoid.service.sensors.SensorType;
 
 /**

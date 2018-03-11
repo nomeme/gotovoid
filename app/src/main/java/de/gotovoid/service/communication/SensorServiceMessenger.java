@@ -10,8 +10,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import de.gotovoid.service.LocationService;
-import de.gotovoid.service.communication.ISensorService;
-import de.gotovoid.service.communication.ISensorServiceCallback;
 
 /**
  * Created by DJ on 16/02/18.
@@ -22,27 +20,24 @@ import de.gotovoid.service.communication.ISensorServiceCallback;
  */
 public class SensorServiceMessenger {
     private static final String TAG = SensorServiceMessenger.class.getSimpleName();
-    private final ServiceConnection mServiceConnection;
-    private ISensorService mService;
+    private final SensorServiceConnection mServiceConnection;
     private boolean mIsBound;
 
     /**
      * Creates a new instance of the {@link SensorServiceMessenger}.
      */
     public SensorServiceMessenger() {
-        mServiceConnection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(final ComponentName name, final IBinder service) {
-                Log.d(TAG, "onServiceConnected() called with: name = [" + name
-                        + "], service = [" + service + "]");
-                mService = ISensorService.Stub.asInterface(service);
-            }
+        this(new SensorServiceConnection());
+    }
 
-            @Override
-            public void onServiceDisconnected(final ComponentName name) {
-                mService = null;
-            }
-        };
+    /**
+     * Creates a new instance of the {@link SensorServiceConnection} taking the
+     * {@link SensorServiceConnection}.
+     *
+     * @param connection the {@link SensorServiceConnection}
+     */
+    SensorServiceMessenger(@NonNull final SensorServiceConnection connection) {
+        mServiceConnection = connection;
     }
 
     /**
@@ -93,12 +88,15 @@ public class SensorServiceMessenger {
      * @param callback     the {@link ISensorServiceCallback}
      * @return true if successful
      */
-    public boolean start(final CallbackRegistration registration,
-                         final ISensorServiceCallback callback) {
+    public boolean start(@NonNull final CallbackRegistration registration,
+                         @NonNull final ISensorServiceCallback callback) {
         Log.d(TAG, "start() called with: registration = [" + registration
                 + "], callback = [" + callback + "]");
+        if (mServiceConnection == null || mServiceConnection.getService() == null) {
+            return false;
+        }
         try {
-            mService.startSensor(registration, callback);
+            mServiceConnection.getService().startSensor(registration, callback);
             return true;
         } catch (final RemoteException exception) {
             Log.e(TAG, "start: ", exception);
@@ -113,10 +111,13 @@ public class SensorServiceMessenger {
      * @param registration the {@link CallbackRegistration}
      * @return true if successful
      */
-    public boolean stop(final CallbackRegistration registration) {
+    public boolean stop(@NonNull final CallbackRegistration registration) {
+        if (mServiceConnection == null || mServiceConnection.getService() == null) {
+            return false;
+        }
         Log.d(TAG, "stop() called with: registration = [" + registration + "]");
         try {
-            mService.stopSensor(registration);
+            mServiceConnection.getService().stopSensor(registration);
             return true;
         } catch (final RemoteException exception) {
             Log.e(TAG, "stop: ", exception);
@@ -131,8 +132,11 @@ public class SensorServiceMessenger {
      * @return true if successful
      */
     public boolean startRecording(final long recordingId) {
+        if (mServiceConnection == null || mServiceConnection.getService() == null) {
+            return false;
+        }
         try {
-            mService.startRecording(recordingId);
+            mServiceConnection.getService().startRecording(recordingId);
             return true;
         } catch (final RemoteException exception) {
             Log.e(TAG, "startRecording: ", exception);
@@ -146,8 +150,11 @@ public class SensorServiceMessenger {
      * @return true if successful
      */
     public boolean stopRecording() {
+        if (mServiceConnection == null || mServiceConnection.getService() == null) {
+            return false;
+        }
         try {
-            mService.stopRecording();
+            mServiceConnection.getService().stopRecording();
             return true;
         } catch (final RemoteException exception) {
             Log.e(TAG, "stopRecording: ", exception);
@@ -162,15 +169,51 @@ public class SensorServiceMessenger {
      * @return true if successful
      */
     public boolean setUpdatesEnabled(final boolean isEnabled) {
-        if (mService == null) {
+        if (mServiceConnection == null || mServiceConnection.getService() == null) {
             return false;
         }
         try {
-            mService.setUpdatePaused(!isEnabled);
+            mServiceConnection.getService().setUpdatePaused(!isEnabled);
             return true;
         } catch (final RemoteException exception) {
             Log.e(TAG, "setUpdatesEnabled: ", exception);
             return false;
+        }
+    }
+
+    /**
+     * Connection to the {@link LocationService}.
+     */
+    static class SensorServiceConnection implements ServiceConnection {
+        /**
+         * The service connection.
+         */
+        private ISensorService mService;
+
+        @Override
+        public void onServiceConnected(final ComponentName name, final IBinder service) {
+            Log.d(TAG, "onServiceConnected() called with: name = [" + name
+                    + "], service = [" + service + "]");
+            mService = ISensorService.Stub.asInterface(service);
+        }
+
+        /**
+         * Returns the {@link ISensorService} instance to communicate with.
+         *
+         * @return the {@link ISensorService}
+         */
+        ISensorService getService() {
+            return mService;
+        }
+
+        @Override
+        public void onServiceDisconnected(final ComponentName name) {
+            mService = null;
+        }
+
+        @Override
+        public void onBindingDied(final ComponentName name) {
+            // Do nothing.
         }
     }
 }
