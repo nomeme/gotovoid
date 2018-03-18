@@ -206,20 +206,20 @@ public class SensorHandler {
         }
 
         @Override
-        public void onChange(@NonNull final RecordingEntry recordingEntry) {
-            Log.d(TAG, "onChange() called with: recordingEntry = [" + recordingEntry + "]");
-            if (recordingEntry == null) {
+        public void onChange(@NonNull final AbstractSensor.Result<RecordingEntry> result) {
+            Log.d(TAG, "onChange() called with: recordingEntry = [" + result + "]");
+            if (result == null) {
                 Log.e(TAG, "onChange: recordingEntry is null");
                 return;
             } else {
-                Log.d(TAG, "onChange: write data: " + recordingEntry.getRecordingId());
+                Log.d(TAG, "onChange: write data: " + result.getValue().getRecordingId());
             }
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
                     Log.d(TAG, "run: write data: ");
                     try {
-                        mDatabase.getRecordingEntryDao().add(recordingEntry);
+                        mDatabase.getRecordingEntryDao().add(result.getValue());
                     } catch (final IllegalStateException exception) {
                         Log.e(TAG, "run: save recording entry failed: ", exception);
                     }

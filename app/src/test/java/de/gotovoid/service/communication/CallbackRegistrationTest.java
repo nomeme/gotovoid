@@ -49,6 +49,11 @@ public class CallbackRegistrationTest {
         PowerMockito.mockStatic(Parcel.class);
     }
 
+    /**
+     * Prepare the parameters
+     *
+     * @return the parameters
+     */
     @Parameters(name = "type: {0}, freq: {1}, callback: {2}")
     public static Collection<Object[]> initParameters() {
         Long[] updateFrequencies = {0l, 10l, 100l, 1000l, 10000l, 100000l};
@@ -66,6 +71,9 @@ public class CallbackRegistrationTest {
         return list;
     }
 
+    /**
+     * Verifies the data set.
+     */
     @Test
     public void verifyDataSet() {
         final CallbackRegistration registration = new CallbackRegistration(mSensorType,
@@ -76,6 +84,9 @@ public class CallbackRegistrationTest {
         assertThat(registration.getCallbackId(), is(System.identityHashCode(mCallback)));
     }
 
+    /**
+     * Verify that writing to a {@link Parcel} works as expected.
+     */
     @Test
     public void testWriteToParcel() {
         final CallbackRegistration registration = new CallbackRegistration(mSensorType,
@@ -92,6 +103,9 @@ public class CallbackRegistrationTest {
                 .writeLong(mUpdateFrequency);
     }
 
+    /**
+     * Verifies that creation from a {@link Parcel} works as expected.
+     */
     @Test
     public void testCreateFromParcel() {
         final Parcel parcel = Mockito.mock(Parcel.class);

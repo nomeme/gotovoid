@@ -67,6 +67,7 @@ public class RecordingSensor extends AbstractSensor<Long> {
     RecordingSensor(final PressureSensor pressureSensor,
                     final LocationSensor locationSensor,
                     final AbstractSensor.Observer<RecordingEntry> observer) {
+        super(new StateEvaluator(5, 5));
         mRecordingEntryObserver = observer;
         mPressureSensor = pressureSensor;
         mLocationSensor = locationSensor;
@@ -145,7 +146,7 @@ public class RecordingSensor extends AbstractSensor<Long> {
         }
 
         @Override
-        public void onChange(@NonNull final ExtendedGeoCoordinate extendedGeoCoordinate) {
+        public void onChange(@NonNull final Result<ExtendedGeoCoordinate> extendedGeoCoordinate) {
             Log.d(TAG, "onChange() called with: extendedGeoCoordinate = [" + extendedGeoCoordinate + "]");
             if (extendedGeoCoordinate != null
                     && mAltitude != null
@@ -156,11 +157,12 @@ public class RecordingSensor extends AbstractSensor<Long> {
                         new RecordingEntry(
                                 mRecordingId,
                                 System.currentTimeMillis(),
-                                extendedGeoCoordinate.getLongitude(),
-                                extendedGeoCoordinate.getLatitude(),
+                                extendedGeoCoordinate.getValue().getLongitude(),
+                                extendedGeoCoordinate.getValue().getLatitude(),
                                 mAltitude);
                 // Notify the RecordingEntry observer to store the data in the database
-                mRecordingEntryObserver.onChange(entry);
+                mRecordingEntryObserver.onChange(
+                        new Result<>(SensorState.RUNNING, entry));
                 // Notify the registered observers with the recording id
                 notifyObserver(mRecordingId);
             }
@@ -182,13 +184,27 @@ public class RecordingSensor extends AbstractSensor<Long> {
         }
 
         @Override
-        public void onChange(@NonNull final Float pressure) {
-            Log.d(TAG, "onChange() called with: pressure = [" + pressure + "]");
-            if (mCalibratedAltitude == null || pressure == null) {
+        public void onChange(@NonNull final Result<Float> result) {
+            Log.d(TAG, "onChange() called with: pressure = [" + result + "]");
+            if (mCalibratedAltitude == null || result == null) {
                 mAltitude = null;
                 return;
             }
-            mAltitude = mCalibratedAltitude.calculateHeight(pressure);
+            mAltitude = mCalibratedAltitude.calculateHeight(result.getValue());
+        }
+    }
+
+    private static class StateEvaluator
+            extends AbstractSensor.StateEvaluator<Long> {
+
+        public StateEvaluator(final int bufferSize, final double tolerance) {
+            super(bufferSize, tolerance);
+        }
+
+        @Override
+        protected double computeDifference(final Long first,
+                                           final Long second) {
+            return 0;
         }
     }
 }

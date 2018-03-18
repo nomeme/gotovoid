@@ -5,12 +5,20 @@ import android.util.Log;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.powermock.modules.junit4.PowerMockRunnerDelegate;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -38,6 +46,13 @@ public abstract class GenericSensorTest {
      * @return the {@link AbstractSensor} instance under test
      */
     protected abstract AbstractSensor getSensor();
+
+    /**
+     * Returns the data to notify observers with.
+     *
+     * @return data to be returned
+     */
+    protected abstract Serializable getData();
 
     /**
      * Verify that adding an {@link AbstractSensor.Observer} works.
@@ -158,12 +173,13 @@ public abstract class GenericSensorTest {
     public void testNotifyObserver() {
         final AbstractSensor.Observer observer1 = Mockito.mock(AbstractSensor.Observer.class);
         final AbstractSensor.Observer observer2 = Mockito.mock(AbstractSensor.Observer.class);
-        final Object data = new Object();
         getSensor().addObserver(observer1);
         getSensor().addObserver(observer2);
-        getSensor().notifyObserver(data);
-        Mockito.verify(observer1, Mockito.times(1)).onChange(data);
-        Mockito.verify(observer2, Mockito.times(1)).onChange(data);
+        getSensor().notifyObserver(getData());
+        Mockito.verify(observer1, Mockito.times(1)).onChange(
+                Mockito.any(AbstractSensor.Result.class));
+        Mockito.verify(observer2, Mockito.times(1)).onChange(
+                Mockito.any(AbstractSensor.Result.class));
     }
 
     /**
@@ -177,20 +193,108 @@ public abstract class GenericSensorTest {
         final long maxFreq = minFreq * 2;
         final AbstractSensor.Observer observer1 = Mockito.mock(AbstractSensor.Observer.class);
         final AbstractSensor.Observer observer2 = Mockito.mock(AbstractSensor.Observer.class);
-        final Object data = new Object();
         Mockito.when(observer1.getUpdateFrequency()).thenReturn(minFreq);
         Mockito.when(observer2.getUpdateFrequency()).thenReturn(maxFreq);
         getSensor().addObserver(observer1);
         getSensor().addObserver(observer2);
         for (int i = 0; i < count; i++) {
-            getSensor().notifyObserver(data);
+            getSensor().notifyObserver(getData());
             try {
                 Thread.sleep(minFreq);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-        Mockito.verify(observer1, Mockito.times(count)).onChange(Mockito.any());
-        Mockito.verify(observer2, Mockito.times(count / 2)).onChange(Mockito.any());
+        Mockito.verify(observer1, Mockito.times(count)).onChange(
+                Mockito.any(AbstractSensor.Result.class));
+        Mockito.verify(observer2, Mockito.times(count / 2)).onChange(
+                Mockito.any(AbstractSensor.Result.class));
+    }
+
+    /**
+     * Test for the {@link StateEvaluator}.
+     */
+    @RunWith(PowerMockRunner.class)
+    public static class StateEvaluatorTest {
+        private List<AbstractSensor.Observer<Integer>> mEmptyList;
+        private List<AbstractSensor.Observer<Integer>> mObserverList;
+        private StateEvaluator mEvaluator;
+
+        /**
+         * Prepare the tests.
+         */
+        @Before
+        public void before() {
+            mEmptyList = new ArrayList<>();
+            mObserverList = new ArrayList<>();
+            mObserverList.add(Mockito.mock(AbstractSensor.Observer.class));
+            mEvaluator = new StateEvaluator(5, 5);
+        }
+
+        /**
+         * Verify that the stopped state works as expected.
+         */
+        @Test
+        public void testStopped() {
+            SensorState state = mEvaluator.evaluateState(0, mEmptyList);
+            assertThat(state, is(SensorState.STOPPED));
+        }
+
+        /**
+         * Verify that the started state works as expected.
+         */
+        @Test
+        public void testStarted() {
+            SensorState state = mEvaluator.evaluateState(0, mObserverList);
+            assertThat(state, is(SensorState.STARTED));
+        }
+
+        /**
+         * Verify that the calibrating state works as expected.
+         */
+        @Test
+        public void testCalibrating() {
+            final int[] values = {0, 5, 10, 15, 20, 25, 30, 35};
+            SensorState state = null;
+            for (int value : values) {
+                state = mEvaluator.evaluateState(value, mObserverList);
+            }
+            assertThat(state, is(SensorState.CALIBRATING));
+        }
+
+        /**
+         * Verify that the running state works as expected.
+         */
+        @Test
+        public void testRunning() {
+            final int[] values = {0, 10, 11, 12, 13, 14, 15, 16};
+            SensorState state = null;
+            for (int value : values) {
+                state = mEvaluator.evaluateState(value, mObserverList);
+            }
+            assertThat(state, is(SensorState.RUNNING));
+        }
+
+        /**
+         * Test implementation of the {@link StateEvaluator}.
+         */
+        private class StateEvaluator extends AbstractSensor.StateEvaluator<Integer> {
+
+            /**
+             * Constructor.
+             *
+             * @param bufferSize size of the buffer
+             * @param tolerance  the tolerance
+             */
+            public StateEvaluator(int bufferSize, double tolerance) {
+                super(bufferSize, tolerance);
+            }
+
+            @Override
+            protected double computeDifference(final Integer first, final Integer second) {
+                return Math.abs(second - first);
+            }
+        }
+
     }
 }

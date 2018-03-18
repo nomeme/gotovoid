@@ -72,6 +72,11 @@ public class SensorServiceBinder extends ISensorService.Stub {
         }
     }
 
+    /**
+     * Returns true if the updates from the sensors are currently paused.
+     *
+     * @return true if paused
+     */
     boolean isUpdatePaused() {
         synchronized (mLock) {
             return mIsUpdatePaused;
@@ -271,14 +276,13 @@ public class SensorServiceBinder extends ISensorService.Stub {
             mCallback = callback;
         }
 
-
         @Override
-        public void onChange(@NonNull final T type) {
+        public void onChange(@NonNull final AbstractSensor.Result<T> result) {
             if (isUpdatePaused()) {
                 return;
             }
             try {
-                mCallback.onSensorValueChanged(new Response(type));
+                mCallback.onSensorValueChanged(new Response(result.getValue()));
             } catch (final RemoteException exception) {
                 Log.e(TAG, "onChange: ", exception);
             }

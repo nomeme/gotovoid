@@ -10,6 +10,7 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
 
@@ -22,13 +23,13 @@ import static org.hamcrest.Matchers.*;
  */
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({Log.class})
-public class AbstractSensorTest extends GenericSensorTest{
+public abstract class AbstractSensorTest extends GenericSensorTest {
     private Sensor mSensor;
 
     @Before
     public void before() {
         PowerMockito.mockStatic(Log.class);
-        mSensor = new Sensor();
+        mSensor = new Sensor(Mockito.mock(AbstractSensor.StateEvaluator.class));
     }
 
     /**
@@ -78,7 +79,6 @@ public class AbstractSensorTest extends GenericSensorTest{
         Mockito.when(observer1.getUpdateFrequency()).thenReturn(maxUpdateFreq);
         final AbstractSensor.Observer observer2 = Mockito.mock(AbstractSensor.Observer.class);
         Mockito.when(observer2.getUpdateFrequency()).thenReturn(minUpdateFreq);
-        final Object data = new Object();
         mSensor.addObserver(observer1);
         mSensor.addObserver(observer2);
         assertThat(mSensor.mIsRestarted, equalTo(true));
@@ -110,6 +110,10 @@ public class AbstractSensorTest extends GenericSensorTest{
         private boolean mIsStarted;
         private boolean mIsStopped;
         private boolean mIsRestarted;
+
+        public Sensor(final StateEvaluator stateEvaluator) {
+            super(stateEvaluator);
+        }
 
         @Override
         protected void startSensor() {

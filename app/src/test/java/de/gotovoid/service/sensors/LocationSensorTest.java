@@ -21,6 +21,7 @@ import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowApplication;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +50,11 @@ public class LocationSensorTest extends GenericSensorTest {
         mService = Robolectric.buildService(LocationService.class).get();
         mLocationSensor = new LocationSensor(mService.getApplicationContext());
         mLocationProvider = Mockito.mock(FusedLocationProviderClient.class);
+    }
+
+    @Override
+    protected Serializable getData() {
+        return Mockito.mock(ExtendedGeoCoordinate.class);
     }
 
     /**
@@ -131,7 +137,7 @@ public class LocationSensorTest extends GenericSensorTest {
         list.add(location);
         getSensor().getSensorCallback().onLocationResult(LocationResult.create(list));
         Mockito.verify(observer, Mockito.times(1))
-                .onChange(Mockito.any(ExtendedGeoCoordinate.class));
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
     /**
@@ -143,7 +149,7 @@ public class LocationSensorTest extends GenericSensorTest {
         getSensor().addObserver(observer);
         getSensor().getSensorCallback().onLocationResult(null);
         Mockito.verify(observer, Mockito.times(0))
-                .onChange(Mockito.any(ExtendedGeoCoordinate.class));
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
     /**
@@ -155,7 +161,7 @@ public class LocationSensorTest extends GenericSensorTest {
         getSensor().addObserver(observer);
         getSensor().getSensorCallback().onLocationResult(LocationResult.create(null));
         Mockito.verify(observer, Mockito.times(0))
-                .onChange(Mockito.any(ExtendedGeoCoordinate.class));
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
     /**

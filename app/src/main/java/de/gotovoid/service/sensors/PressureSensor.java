@@ -8,6 +8,8 @@ import android.hardware.SensorManager;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import java.io.Serializable;
+
 /**
  * Created by DJ on 07/01/18.
  */
@@ -63,6 +65,7 @@ public class PressureSensor extends AbstractSensor<Float> {
      * @param context the {@link Context}
      */
     PressureSensor(@NonNull final Context context) {
+        super(new StateEvaluator(4, .1));
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         mPressureSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
     }
@@ -98,4 +101,15 @@ public class PressureSensor extends AbstractSensor<Float> {
         return mSensorCallback;
     }
 
+    private static class StateEvaluator extends AbstractSensor.StateEvaluator<Float> {
+
+        public StateEvaluator(int bufferSize, double tolerance) {
+            super(bufferSize, tolerance);
+        }
+
+        @Override
+        protected double computeDifference(final Float first, final Float second) {
+            return Math.abs(first - second);
+        }
+    }
 }

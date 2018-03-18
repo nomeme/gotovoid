@@ -7,6 +7,8 @@ import android.arch.persistence.room.Ignore;
 import android.arch.persistence.room.Index;
 import android.arch.persistence.room.PrimaryKey;
 
+import java.io.Serializable;
+
 /**
  * Object representing an entry of a {@link Recording}.
  * This contains the id of the {@link Recording} as well as the latitude, longitude and altitude.
@@ -15,12 +17,12 @@ import android.arch.persistence.room.PrimaryKey;
  * Created by DJ on 22/12/17.
  */
 @Entity(tableName = "recording_entry",
-        indices = {@Index(value = "recording_id", name = "recording")},
+        indices = {@Index(value = "recording_id", name = "recording_index")},
         foreignKeys = @ForeignKey(entity = Recording.class,
                 parentColumns = "id",
                 childColumns = "recording_id",
                 onDelete = ForeignKey.CASCADE))
-public class RecordingEntry {
+public class RecordingEntry implements Serializable {
     @ColumnInfo(name = "id")
     @PrimaryKey(autoGenerate = true)
     private long mId;

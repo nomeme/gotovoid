@@ -16,6 +16,7 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
 import de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
+import de.gotovoid.domain.model.geodata.GeoCoordinate;
 
 /**
  * Created by DJ on 07/01/18.
@@ -67,7 +68,7 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
      */
     @Deprecated
     LocationSensor(final Context context) {
-        mLocationProvider = LocationServices.getFusedLocationProviderClient(context);
+        this(LocationServices.getFusedLocationProviderClient(context));
     }
 
     /**
@@ -77,6 +78,7 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
      * @param provider the {@link FusedLocationProviderClient} to register at
      */
     LocationSensor(final FusedLocationProviderClient provider) {
+        super(new StateEvaluator(5, 40));
         mLocationProvider = provider;
     }
 
@@ -127,5 +129,23 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
         return mLocationCallback;
     }
 
+    private static class StateEvaluator
+            extends AbstractSensor.StateEvaluator<ExtendedGeoCoordinate> {
+
+        public StateEvaluator(int bufferSize, double tolerance) {
+            super(bufferSize, tolerance);
+        }
+
+        // TODO: use lambda
+        @Override
+        protected double computeDifference(final ExtendedGeoCoordinate first,
+                                           final ExtendedGeoCoordinate second) {
+            GeoCoordinate firstCoord = new GeoCoordinate(first.getLatitude(),
+                    first.getLongitude());
+            GeoCoordinate secondCoord = new GeoCoordinate(second.getLatitude(),
+                    second.getLongitude());
+            return Math.abs(firstCoord.getHaversineDistanceTo(secondCoord));
+        }
+    }
 
 }

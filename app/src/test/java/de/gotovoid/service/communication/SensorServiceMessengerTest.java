@@ -89,7 +89,6 @@ public class SensorServiceMessengerTest {
     @Test
     public void testStart() {
         final CallbackRegistration registration = Mockito.mock(CallbackRegistration.class);
-        //Mockito.when(registration.getType()).thenReturn(SensorType.PRESSURE);
         final ISensorServiceCallback callback = Mockito.mock(ISensorServiceCallback.class);
         Mockito.when(mConnection.getService()).thenReturn(mSensorService);
         assertThat(mMenssenger.start(registration, callback), is(true));
@@ -147,17 +146,26 @@ public class SensorServiceMessengerTest {
         assertThat(mMenssenger.startRecording(RECORDING_ID), is(false));
     }
 
+    /**
+     * Verify that stopping the recording works as expected.
+     */
     @Test
     public void testStopRecording() {
         Mockito.when(mConnection.getService()).thenReturn(mSensorService);
         assertThat(mMenssenger.stopRecording(), is(true));
     }
 
+    /**
+     * Verify that stopping the recording returns false when unbound.
+     */
     @Test
     public void testStopRecordingUnbound() {
         assertThat(mMenssenger.stopRecording(), is(false));
     }
 
+    /**
+     * Verify that {@link SensorServiceMessenger#setUpdatesEnabled(boolean)} works as expected.
+     */
     @Test
     public void testSetUpdateEnabled() {
         Mockito.when(mConnection.getService()).thenReturn(mSensorService);
@@ -165,6 +173,10 @@ public class SensorServiceMessengerTest {
         assertThat(mMenssenger.setUpdatesEnabled(false), is(true));
     }
 
+    /**
+     * Verify that {@link SensorServiceMessenger#setUpdatesEnabled(boolean)} returns false
+     * when unbound.
+     */
     @Test
     public void testSetUpdateEnabledUnbound() {
         assertThat(mMenssenger.setUpdatesEnabled(true), is(false));

@@ -27,6 +27,10 @@ import static org.hamcrest.Matchers.*;
 /**
  * Created by DJ on 04/03/18.
  */
+
+/**
+ * Test for the {@link Response} class.
+ */
 @RunWith(PowerMockRunner.class)
 @PowerMockRunnerDelegate(Parameterized.class)
 @PrepareForTest({Parcel.class})
@@ -39,6 +43,11 @@ public class ResponseTest {
     @Parameter
     public Serializable mData;
 
+    /**
+     * Prepare the parameters for this test.
+     *
+     * @return parameters
+     */
     @Parameters(name = "data: {0}")
     public static Collection<Object[]> initParameters() {
         List<Object[]> parameters = new ArrayList<>();
@@ -54,11 +63,17 @@ public class ResponseTest {
         return parameters;
     }
 
+    /**
+     * Prepare the test run
+     */
     @Before
     public void before() {
         PowerMockito.mockStatic(Parcel.class);
     }
 
+    /**
+     * Verify that writing to a {@link Parcel} works as expected.
+     */
     @Test
     public void testWriteToParcel() {
         final Parcel parcel = Mockito.mock(Parcel.class);
@@ -67,6 +82,9 @@ public class ResponseTest {
         Mockito.verify(parcel, Mockito.times(1)).writeSerializable(mData);
     }
 
+    /**
+     * Verify that creation from a {@link Parcel} works as expected.
+     */
     public void testCreateFromParcel() {
         final Parcel parcel = Mockito.mock(Parcel.class);
         Mockito.when(parcel.readSerializable()).thenReturn(mData);

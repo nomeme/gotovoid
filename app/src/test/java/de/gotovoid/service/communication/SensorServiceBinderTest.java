@@ -1,12 +1,10 @@
 package de.gotovoid.service.communication;
 
-import android.app.Application;
 import android.os.RemoteException;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 import org.robolectric.ParameterizedRobolectricTestRunner;
 import org.robolectric.RobolectricTestRunner;
@@ -246,7 +244,7 @@ public class SensorServiceBinderTest {
             mBinder.startSensor(mCallbackRegistration, mCallback);
             final SensorServiceBinder.Callback callback =
                     mBinder.getCallback(mCallbackRegistration);
-            callback.getObserver().onChange(mValue);
+            callback.getObserver().onChange(Mockito.mock(AbstractSensor.Result.class));
             Mockito.verify(mCallback,
                     Mockito.times(1))
                     .onSensorValueChanged(Mockito.any(Response.class));
@@ -264,7 +262,7 @@ public class SensorServiceBinderTest {
             mBinder.setUpdatePaused(true);
             final SensorServiceBinder.Callback callback =
                     mBinder.getCallback(mCallbackRegistration);
-            callback.getObserver().onChange(mValue);
+            callback.getObserver().onChange(Mockito.mock(AbstractSensor.Result.class));
             Mockito.verify(mCallback,
                     Mockito.times(0))
                     .onSensorValueChanged(Mockito.any(Response.class));

@@ -15,7 +15,9 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.util.ResourceBundle;
 
 /**
  * Created by DJ on 25/02/18.
@@ -53,6 +55,11 @@ public class PressureSensorTest extends GenericSensorTest {
     @Override
     protected PressureSensor getSensor() {
         return mPressureSensor;
+    }
+
+    @Override
+    protected Serializable getData() {
+        return 0f;
     }
 
     /**
@@ -117,7 +124,7 @@ public class PressureSensorTest extends GenericSensorTest {
         getSensor().addObserver(observer);
         getSensor().getSensorCallback().onSensorChanged(event);
         Mockito.verify(observer, Mockito.times(1))
-                .onChange(0f);
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
     /**
@@ -130,7 +137,7 @@ public class PressureSensorTest extends GenericSensorTest {
         getSensor().addObserver(observer);
         getSensor().getSensorCallback().onSensorChanged(null);
         Mockito.verify(observer, Mockito.times(0))
-                .onChange(Mockito.anyFloat());
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
     /**
@@ -144,6 +151,6 @@ public class PressureSensorTest extends GenericSensorTest {
         getSensor().addObserver(observer);
         getSensor().getSensorCallback().onSensorChanged(event);
         Mockito.verify(observer, Mockito.times(0))
-                .onChange(Mockito.anyFloat());
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 }

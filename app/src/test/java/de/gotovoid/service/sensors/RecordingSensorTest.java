@@ -10,6 +10,8 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.Serializable;
+
 import de.gotovoid.database.model.CalibratedAltitude;
 import de.gotovoid.database.model.RecordingEntry;
 import de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
@@ -46,6 +48,11 @@ public class RecordingSensorTest extends GenericSensorTest {
         return mRecordingSensor;
     }
 
+    @Override
+    protected Serializable getData() {
+        return 0l;
+    }
+
     /**
      * Verify the method {@link RecordingSensor#startSensor()} works as expected.
      */
@@ -79,15 +86,22 @@ public class RecordingSensorTest extends GenericSensorTest {
         final ExtendedGeoCoordinate coordinate = Mockito.mock(ExtendedGeoCoordinate.class);
         final CalibratedAltitude altitude = Mockito.mock(CalibratedAltitude.class);
         final long recordingId = 1337;
+        final AbstractSensor.Result<Float> pressureResult = Mockito.mock(AbstractSensor.Result.class);
+        Mockito.when(pressureResult.getValue()).thenReturn(1f);
+        final AbstractSensor.Result<ExtendedGeoCoordinate> coordinateResult =
+                Mockito.mock(AbstractSensor.Result.class);
+        Mockito.when(coordinateResult.getValue()).thenReturn(coordinate);
+
         getSensor().setCalibratedAltitude(altitude);
         getSensor().addObserver(observer);
         getSensor().startRecording(recordingId);
-        getSensor().getPressureObserver().onChange(0f);
+
+        getSensor().getPressureObserver().onChange(pressureResult);
         Mockito.verify(observer, Mockito.times(0))
-                .onChange(Mockito.anyLong());
-        getSensor().getLocationObserver().onChange(coordinate);
+                .onChange(pressureResult);
+        getSensor().getLocationObserver().onChange(coordinateResult);
         Mockito.verify(observer, Mockito.times(1))
-                .onChange(recordingId);
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
     /**
@@ -97,12 +111,19 @@ public class RecordingSensorTest extends GenericSensorTest {
     public void testNotifyNoAltitude() {
         final RecordingSensor.Observer observer = Mockito.mock(RecordingSensor.Observer.class);
         final ExtendedGeoCoordinate coordinate = Mockito.mock(ExtendedGeoCoordinate.class);
+        final float pressure = 0f;
+        final AbstractSensor.Result<Float> pressureResult =
+                Mockito.mock(AbstractSensor.Result.class);
+        Mockito.when(pressureResult.getValue()).thenReturn(pressure);
+        final AbstractSensor.Result<ExtendedGeoCoordinate> coordinateResult =
+                Mockito.mock(AbstractSensor.Result.class);
+        Mockito.when(coordinateResult.getValue()).thenReturn(coordinate);
         getSensor().addObserver(observer);
         getSensor().startRecording(0);
-        getSensor().getPressureObserver().onChange(0f);
-        getSensor().getLocationObserver().onChange(coordinate);
+        getSensor().getPressureObserver().onChange(pressureResult);
+        getSensor().getLocationObserver().onChange(coordinateResult);
         Mockito.verify(observer, Mockito.times(0))
-                .onChange(Mockito.anyLong());
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
     /**
@@ -112,13 +133,17 @@ public class RecordingSensorTest extends GenericSensorTest {
     public void testNotifyNull() {
         final RecordingSensor.Observer observer = Mockito.mock(RecordingSensor.Observer.class);
         final CalibratedAltitude altitude = Mockito.mock(CalibratedAltitude.class);
+        final float pressure = 0f;
+        final AbstractSensor.Result<Float> pressureResult =
+                Mockito.mock(AbstractSensor.Result.class);
+        Mockito.when(pressureResult.getValue()).thenReturn(pressure);
         getSensor().setCalibratedAltitude(altitude);
         getSensor().addObserver(observer);
         getSensor().startRecording(0);
-        getSensor().getPressureObserver().onChange(0f);
+        getSensor().getPressureObserver().onChange(pressureResult);
         getSensor().getLocationObserver().onChange(null);
         Mockito.verify(observer, Mockito.times(0))
-                .onChange(Mockito.anyLong());
+                .onChange(Mockito.any(AbstractSensor.Result.class));
     }
 
 }
