@@ -10,10 +10,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import de.gotovoid.service.sensors.AbstractSensor;
 import de.gotovoid.service.sensors.LocationSensor;
 import de.gotovoid.database.AppDatabase;
 import de.gotovoid.database.model.CalibratedAltitude;
 import de.gotovoid.service.repository.LocationRepository;
+import de.gotovoid.service.sensors.PressureSensor;
 import de.gotovoid.service.sensors.SensorType;
 import de.gotovoid.view.CalibratorFragment;
 
@@ -36,9 +38,9 @@ public class CalibratorViewModel extends AndroidViewModel {
     private final AppDatabase mDatabase;
 
     /**
-     * Observer for pressure sensor updates.
+     * Observable for pressure sensor updates.
      */
-    private final LocationRepository.ServiceObserver<Float> mPressureObserver;
+    private final LocationRepository.ServiceObserver<AbstractSensor.Result<Float>> mPressureObserver;
 
     /**
      * Thread to handle background tasks, like modifying database entries.
@@ -58,6 +60,7 @@ public class CalibratorViewModel extends AndroidViewModel {
     /**
      * Value holder for the current pressure.
      */
+    // TODO: make this handle calibrating state
     final private MutableLiveData<Float> mCurrentPressure;
     /**
      * Value holder for the current altitude.
@@ -90,15 +93,16 @@ public class CalibratorViewModel extends AndroidViewModel {
         mDatabase = AppDatabase.getDatabaseInstance(application);
 
         // Create the pressure sensor observer to be notified by the repository.
-        mPressureObserver = new LocationRepository.ServiceObserver<Float>(
+        mPressureObserver = new LocationRepository.ServiceObserver<AbstractSensor.Result<Float>>(
                 UPDATE_FREQUENCY,
                 SensorType.PRESSURE) {
             @Override
-            public void onChange(final Float value) {
+            public void onChange(final AbstractSensor.Result<Float> value) {
                 // Notify the pressure LiveData.
-                mCurrentPressure.postValue(value);
+                // TODO: handle calibrating state
+                mCurrentPressure.postValue(value.getValue());
                 // Notify the altitude LiveData
-                mCurrentAltitude.postValue(calculateAltitude(value));
+                mCurrentAltitude.postValue(calculateAltitude(value.getValue()));
             }
         };
         // Create the LiveData object for the current pressure

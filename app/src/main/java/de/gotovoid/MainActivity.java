@@ -44,7 +44,7 @@ public class MainActivity extends FragmentActivity
      */
     private AmbientMode.AmbientController mAmbientController;
     /**
-     * Callback for ambient mode changes.
+     * Observer for ambient mode changes.
      */
     private ActivityAmbientCallback mAmbientCallback;
 

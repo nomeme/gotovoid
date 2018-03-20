@@ -34,6 +34,7 @@ import de.gotovoid.domain.model.GPXSerializer;
 import de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
 import de.gotovoid.domain.model.geodata.GeoCoordinate;
 import de.gotovoid.service.repository.LocationRepository;
+import de.gotovoid.service.sensors.AbstractSensor;
 import de.gotovoid.view.model.RecordingDisplayViewModel;
 import de.gotovoid.R;
 import de.gotovoid.database.model.RecordingEntry;
@@ -188,11 +189,11 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
             mAdapter.setHeaderData(new GeoCoordinateHolder(coords, null));
         } else {
             mModel.getLocation().observe(RecordingDisplayFragment.this,
-                    new Observer<ExtendedGeoCoordinate>() {
+                    new Observer<AbstractSensor.Result<ExtendedGeoCoordinate>>() {
                         @Override
-                        public void onChanged(@Nullable final ExtendedGeoCoordinate location) {
+                        public void onChanged(@Nullable final AbstractSensor.Result<ExtendedGeoCoordinate> result) {
                             Log.d(TAG, "onChanged() called with: location = ["
-                                    + location + "]");
+                                    + result + "]");
                             final GeoCoordinateHolder data = mAdapter.getHeaderData();
                             final List<GeoCoordinate> coords;
                             if (data == null) {
@@ -200,7 +201,7 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
                             } else {
                                 coords = data.getData();
                             }
-                            mAdapter.setHeaderData(new GeoCoordinateHolder(coords, location));
+                            mAdapter.setHeaderData(new GeoCoordinateHolder(coords, result.getValue()));
                         }
                     });
         }
@@ -243,7 +244,7 @@ public class RecordingDisplayFragment extends Fragment implements IUpdateableAmb
     }
 
     /**
-     * Initialize the {@link RecordingDisplayViewModel} and register necessary observers in order
+     * Initialize the {@link RecordingDisplayViewModel} and addObserver necessary observers in order
      * to being able to show the {@link RecordingWithEntries}.
      *
      * @param recordingId the id of the {@link RecordingDisplayViewModel} to show

@@ -21,7 +21,7 @@ import java.io.Serializable;
 public class PressureSensor extends AbstractSensor<Float> {
     private static final String TAG = PressureSensor.class.getSimpleName();
     /**
-     * {@link SensorManager} of the system to register for pressure sensor updates.
+     * {@link SensorManager} of the system to addObserver for pressure sensor updates.
      */
     private final SensorManager mSensorManager;
     /**
@@ -34,7 +34,7 @@ public class PressureSensor extends AbstractSensor<Float> {
     @Deprecated
     private long mTimeStamp;
     /**
-     * Callback for {@link Sensor} events.
+     * Observer for {@link Sensor} events.
      */
     private final SensorEventCallback mSensorCallback = new SensorEventCallback() {
         @Override

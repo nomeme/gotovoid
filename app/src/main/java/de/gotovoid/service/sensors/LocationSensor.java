@@ -72,10 +72,10 @@ public class LocationSensor extends AbstractSensor<ExtendedGeoCoordinate> {
     }
 
     /**
-     * Package private constructor taking the {@link FusedLocationProviderClient} to register
+     * Package private constructor taking the {@link FusedLocationProviderClient} to addObserver
      * for updates.
      *
-     * @param provider the {@link FusedLocationProviderClient} to register at
+     * @param provider the {@link FusedLocationProviderClient} to addObserver at
      */
     LocationSensor(final FusedLocationProviderClient provider) {
         super(new StateEvaluator(5, 40));

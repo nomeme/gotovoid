@@ -64,7 +64,7 @@ public class PressureSensorTest extends GenericSensorTest {
 
     /**
      * Verifies that starting the {@link PressureSensor} causes the {@link PressureSensor} to
-     * actually register for hardware {@link Sensor} updates.
+     * actually addObserver for hardware {@link Sensor} updates.
      */
     @Test
     public void startSensor() {

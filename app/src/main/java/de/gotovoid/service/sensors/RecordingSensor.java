@@ -37,7 +37,7 @@ public class RecordingSensor extends AbstractSensor<Long> {
      */
     private final LocationSensor mLocationSensor;
     /**
-     * Observer for {@link RecordingEntry} updates.
+     * Observable for {@link RecordingEntry} updates.
      */
     private final AbstractSensor.Observer<RecordingEntry> mRecordingEntryObserver;
 
@@ -132,7 +132,7 @@ public class RecordingSensor extends AbstractSensor<Long> {
     }
 
     /**
-     * Observer for location data updates.
+     * Observable for location data updates.
      * Will notify the {@link RecordingSensor} observer.
      */
     protected class LocationObserver extends AbstractSensor.Observer<ExtendedGeoCoordinate> {
@@ -170,7 +170,7 @@ public class RecordingSensor extends AbstractSensor<Long> {
     }
 
     /**
-     * Observer for pressure data.
+     * Observable for pressure data.
      * Will store the current pressure in a member variable
      */
     protected class PressureObserver extends AbstractSensor.Observer<Float> {

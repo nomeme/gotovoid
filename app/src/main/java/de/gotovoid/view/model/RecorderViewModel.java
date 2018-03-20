@@ -7,6 +7,7 @@ import android.arch.lifecycle.MutableLiveData;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
+import android.support.annotation.RestrictTo;
 import android.util.Log;
 
 import java.text.SimpleDateFormat;
@@ -18,6 +19,7 @@ import de.gotovoid.database.AppDatabase;
 import de.gotovoid.database.model.Recording;
 import de.gotovoid.database.model.RecordingEntry;
 import de.gotovoid.service.repository.LocationRepository;
+import de.gotovoid.service.sensors.AbstractSensor;
 import de.gotovoid.service.sensors.SensorType;
 
 /**
@@ -45,9 +47,9 @@ public class RecorderViewModel extends AndroidViewModel {
      */
     private final Handler mHandler;
     /**
-     * Observer for the repository.
+     * Observable for the repository.
      */
-    private final LocationRepository.ServiceObserver<Long> mObserver;
+    private final LocationRepository.ServiceObserver<AbstractSensor.Result<Long>> mObserver;
 
     /**
      * The {@link List} of {@link RecordingEntry}s to be displayed.
@@ -78,19 +80,20 @@ public class RecorderViewModel extends AndroidViewModel {
          Room not yet provides events through inter process communication.
           */
         mEntries = new MutableLiveData<>();
-        mObserver = new LocationRepository.ServiceObserver<Long>(UPDATE_FREQUENCY,
+        mObserver = new LocationRepository.ServiceObserver<AbstractSensor.Result<Long>>(
+                UPDATE_FREQUENCY,
                 SensorType.RECORDING) {
 
             @Override
-            public void onChange(final Long recordingId) {
+            public void onChange(final AbstractSensor.Result<Long> result) {
                 Log.d(TAG, "onRecordingUpdate() called with: recordingId = ["
-                        + recordingId + "]");
+                        + result + "]");
                 mHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         mEntries.postValue(mDatabase
                                 .getRecordingEntryDao()
-                                .getTrackEntries(recordingId));
+                                .getTrackEntries(result.getValue()));
                     }
                 });
             }

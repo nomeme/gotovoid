@@ -19,6 +19,7 @@ import de.gotovoid.service.communication.SensorServiceMessenger;
 import de.gotovoid.database.model.Recording;
 import de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
 import de.gotovoid.service.communication.ISensorServiceCallback;
+import de.gotovoid.service.sensors.AbstractSensor;
 import de.gotovoid.service.sensors.SensorType;
 
 /**
@@ -61,12 +62,10 @@ public class LocationRepository {
      * @return the {@link LocationRepository} instance.
      */
     public static LocationRepository getRepository(final Activity activity) {
-        Log.d(TAG, "getRepository() called with: activity = [" + activity + "]");
         if (activity instanceof IRepositoryProvider) {
             // TODO: this is a code smell. we need to provide a generic interface for the specific activity
             return ((IRepositoryProvider) activity).getLocationRepository();
         }
-        Log.e(TAG, "getRepository: null");
         return null;
     }
 
@@ -77,9 +76,10 @@ public class LocationRepository {
      * @param updateFrequency the updateFrequency for the {@link LiveData}
      * @return the {@link LiveData}
      */
-    public LiveData<ExtendedGeoCoordinate> getLocation(final long updateFrequency) {
+    public LiveData<AbstractSensor.Result<ExtendedGeoCoordinate>>
+    getLocation(final long updateFrequency) {
         // TODO: maybe we should not always return a new LiveData object.
-        return new RepositoryLiveData<ExtendedGeoCoordinate>(this,
+        return new RepositoryLiveData<>(this,
                 updateFrequency,
                 SensorType.LOCATION);
     }
@@ -90,9 +90,9 @@ public class LocationRepository {
      * @param updateFrequency the update frequency for the {@link LiveData}
      * @return the {@link LiveData}
      */
-    public LiveData<Float> getPressure(final long updateFrequency) {
+    public LiveData<AbstractSensor.Result<Float>> getPressure(final long updateFrequency) {
         // TODO: maybe we should not always return a new LiveData object.
-        return new RepositoryLiveData<Float>(this,
+        return new RepositoryLiveData<>(this,
                 updateFrequency,
                 SensorType.PRESSURE);
     }
@@ -155,14 +155,14 @@ public class LocationRepository {
     }
 
     /**
-     * Observer for the sensor service.
+     * Observable for the sensor service.
      * Extends the {@link ISensorServiceCallback} so that it can be used for communication with
      * the {@link LocationService}.
      * TODO: possibly move this to the SensorServiceMessenger
      *
      * @param <T> the type the sensor provides
      */
-    public static abstract class ServiceObserver<T extends Serializable> extends ISensorServiceCallback.Stub {
+    public static abstract class ServiceObserver<T> extends ISensorServiceCallback.Stub {
         private final long mUpdateFrequency;
         private final SensorType mType;
 
@@ -223,11 +223,12 @@ public class LocationRepository {
     }
 
     /**
-     * Observer for data from the {@link LocationRepository}. Automatically updates a
+     * Observable for data from the {@link LocationRepository}. Automatically updates a
      * {@link LiveData} object.
      *
      * @param <T> {@link Serializable} data to be observed
      */
+    // TODO: pot this in external file
     private static class RepositoryObserver<T extends Serializable> extends ServiceObserver<T> {
         private MutableLiveData<T> mLiveData;
 
@@ -238,7 +239,7 @@ public class LocationRepository {
          * @param updateFrequency the update frequency of the sensor
          * @param type            the {@link SensorType}
          */
-        public RepositoryObserver(long updateFrequency, SensorType type) {
+        public RepositoryObserver(long updateFrequency, final SensorType type) {
             super(updateFrequency, type);
         }
 
@@ -275,15 +276,21 @@ public class LocationRepository {
     }
 
     /**
-     * {@link MutableLiveData} that supports automatically registering as an Observer through
+     * {@link MutableLiveData} that supports automatically registering as an Observable through
      * an {@link RegistrationHandler}.
      * TODO: move this to a dedicated class
      *
      * @param <T> type of the data to be updated
      */
+    // TODO: move into file ObserverLiveData
     public static class ObserverLiveData<T> extends MutableLiveData<T> {
         private static final String TAG = ObserverLiveData.class.getSimpleName();
         private final RegistrationHandler mRegistrationHandler;
+
+        public ObserverLiveData(final LocationRepository repository,
+                                final ServiceObserver<T> observer) {
+            this(new RegistrationHandlerImpl<>(repository, observer));
+        }
 
         public ObserverLiveData(final RegistrationHandler handler) {
             mRegistrationHandler = handler;
@@ -323,6 +330,32 @@ public class LocationRepository {
              */
             void onUnregister();
         }
+
+        private static final class RegistrationHandlerImpl<T>
+                implements RegistrationHandler {
+            public LocationRepository mRepository;
+            public ServiceObserver<T> mObserver;
+
+            public RegistrationHandlerImpl(final LocationRepository repository,
+                                           final ServiceObserver<T> observer) {
+                mRepository = repository;
+                mObserver = observer;
+            }
+
+            @Override
+            public void onRegister() {
+                if (mRepository != null) {
+                    mRepository.addObserver(mObserver);
+                }
+            }
+
+            @Override
+            public void onUnregister() {
+                if (mRepository != null) {
+                    mRepository.removeObserver(mObserver);
+                }
+            }
+        }
     }
 
     /**
@@ -339,7 +372,7 @@ public class LocationRepository {
          * {@link SensorType} on oder to create a {@link RepositoryObserver} that is used to
          * observe sensor updates.
          *
-         * @param repository     the {@link LocationRepository} to register for updates
+         * @param repository     the {@link LocationRepository} to addObserver for updates
          * @param updateFreqency the update frequency in milliseconds
          * @param type           the {@link SensorType}
          */
@@ -353,8 +386,8 @@ public class LocationRepository {
          * Constructor taking the {@link LocationRepository} and {@link ServiceObserver} used
          * to observe sensor updates.
          *
-         * @param repository the {@link LocationRepository} to register for updates
-         * @param observer   observer to register for updates
+         * @param repository the {@link LocationRepository} to addObserver for updates
+         * @param observer   observer to addObserver for updates
          */
         public RepositoryLiveData(final LocationRepository repository,
                                   final RepositoryObserver<T> observer) {
@@ -366,8 +399,8 @@ public class LocationRepository {
          * Returns the {@link ObserverLiveData.RegistrationHandler} for the
          * {@link RepositoryLiveData}.
          *
-         * @param repository the {@link RepositoryLiveData} to register at for updates
-         * @param observer   the {@link ServiceObserver} to register for updates
+         * @param repository the {@link RepositoryLiveData} to addObserver at for updates
+         * @param observer   the {@link ServiceObserver} to addObserver for updates
          * @return the {@link ObserverLiveData.RegistrationHandler}
          */
         private static RegistrationHandler getRegistrationHandler(
@@ -389,7 +422,7 @@ public class LocationRepository {
             private final ServiceObserver<T> mObserver;
 
             /**
-             * Constructor taking the {@link LocationRepository} to register at and
+             * Constructor taking the {@link LocationRepository} to addObserver at and
              * the {@link ServiceObserver} to r5egister.
              *
              * @param repository the {@link LocationRepository}

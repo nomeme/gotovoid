@@ -54,7 +54,7 @@ public class SensorServiceMessenger {
      * Bind this {@link SensorServiceMessenger} to the {@link LocationService} using the given
      * {@link Context}.
      *
-     * @param context the {@link Context} tu use to register
+     * @param context the {@link Context} tu use to addObserver
      */
     public void doBind(@NonNull final Context context) {
         if (context == null || isBound()) {
@@ -81,7 +81,7 @@ public class SensorServiceMessenger {
 
     /**
      * Tell the {@link LocationService} to start the sensor updates using the provided
-     * {@link CallbackRegistration} to register the callback with it's properties and the
+     * {@link CallbackRegistration} to addObserver the callback with it's properties and the
      * {@link ISensorServiceCallback} to provide a callback for sensor updates.
      *
      * @param registration the {@link CallbackRegistration}
@@ -90,8 +90,6 @@ public class SensorServiceMessenger {
      */
     public boolean start(@NonNull final CallbackRegistration registration,
                          @NonNull final ISensorServiceCallback callback) {
-        Log.d(TAG, "start() called with: registration = [" + registration
-                + "], callback = [" + callback + "]");
         if (mServiceConnection == null || mServiceConnection.getService() == null) {
             return false;
         }

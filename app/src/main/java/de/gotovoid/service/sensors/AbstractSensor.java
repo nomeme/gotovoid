@@ -159,13 +159,9 @@ public abstract class AbstractSensor<Type extends Serializable> {
             }
         }
     }
-/*
-    protected SensorState updateState(final Type value) {
-        return SensorState.STOPPED;
-    }
-*/
+
     /**
-     * Observer for the {@link AbstractSensor}.
+     * Observable for the {@link AbstractSensor}.
      * The {@link Observer} can be registered at a concrete implementation of the
      * {@link AbstractSensor} to receive updates of the sensor data.
      * The {@link Observer} therefore needs to provide the frequency with which the updates need to
@@ -247,7 +243,7 @@ public abstract class AbstractSensor<Type extends Serializable> {
      *
      * @param <T> type of the sensor data
      */
-    public static class Result<T extends Serializable> {
+    public static class Result<T extends Serializable> implements Serializable{
         private final SensorState mSensorState;
         private final T mValue;
 

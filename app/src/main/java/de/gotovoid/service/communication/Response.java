@@ -5,6 +5,8 @@ import android.os.Parcelable;
 
 import java.io.Serializable;
 
+import de.gotovoid.service.sensors.AbstractSensor;
+
 /**
  * Created by DJ on 17/02/18.
  */
@@ -16,7 +18,7 @@ import java.io.Serializable;
  *
  * @param <T> type of the data to be sent to the application
  */
-public class Response<T extends Serializable> implements Parcelable {
+public class Response<T extends AbstractSensor.Result> implements Parcelable {
     /**
      * The creator for the {@link Parcelable}.
      */

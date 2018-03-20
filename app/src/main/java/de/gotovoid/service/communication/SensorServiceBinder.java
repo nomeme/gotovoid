@@ -20,7 +20,7 @@ import de.gotovoid.service.sensors.SensorType;
 
 /**
  * Implementation of the {@link ISensorService}.
- * This implements the service side AIDL interface and enables to register and unregister
+ * This implements the service side AIDL interface and enables to addObserver and unregister
  * callbacks for the sensor service.
  */
 public class SensorServiceBinder extends ISensorService.Stub {
@@ -124,7 +124,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
     }
 
     /**
-     * Add a {@link Callback} to the managed {@link Callback}s and register it at the {@link SensorHandler}.
+     * Add a {@link Callback} to the managed {@link Callback}s and addObserver it at the {@link SensorHandler}.
      * Takes the {@link CallbackRegistration} to identify the callback and the
      * {@link ISensorServiceCallback} for the actual communication with the client.
      *
@@ -146,10 +146,10 @@ public class SensorServiceBinder extends ISensorService.Stub {
             // Check whether the callback is already registered
             if (callbacks.get(registration.getCallbackId()) == null) {
                 Log.d(TAG, "addCallback: add new callback: " + registration.getType());
-                // Create a local Callback instance to be stored in the map
+                // Create a local Observer instance to be stored in the map
                 final Callback callback = createCallback(registration, sensorCallback);
                 if (callback != null) {
-                    // Store the Callback and register it with the SensorHandler.
+                    // Store the Observer and addObserver it with the SensorHandler.
                     callbacks.put(registration.getCallbackId(), callback);
                     mSensorHandler.addObserver(callback.getObserver());
                 }
@@ -175,7 +175,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
             // TODO: minimize synchronized block.
             // Get the appropriate map for the SensorType
             SparseArray<Callback> callbacks = mCallbacks.get(registration.getType());
-            // Check whether the Callback is actually managed.
+            // Check whether the Observer is actually managed.
             if (callbacks.get(registration.getCallbackId()) == null) {
                 Log.d(TAG, "removeCallback: callback not registered");
             } else {
@@ -251,11 +251,11 @@ public class SensorServiceBinder extends ISensorService.Stub {
                 break;
         }
 
-        // Create an Observer for a sensor to be stored and managed.
+        // Create an Observable for a sensor to be stored and managed.
         if (observer == null) {
             return null;
         } else {
-            // Create the Callback to be returned
+            // Create the Observer to be returned
             return new Callback(callback, observer);
         }
     }
@@ -282,7 +282,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
                 return;
             }
             try {
-                mCallback.onSensorValueChanged(new Response(result.getValue()));
+                mCallback.onSensorValueChanged(new Response(result));
             } catch (final RemoteException exception) {
                 Log.e(TAG, "onChange: ", exception);
             }

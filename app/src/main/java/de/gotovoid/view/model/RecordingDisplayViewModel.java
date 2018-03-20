@@ -14,6 +14,7 @@ import de.gotovoid.service.repository.LocationRepository;
 import de.gotovoid.database.AppDatabase;
 import de.gotovoid.database.model.Recording;
 import de.gotovoid.database.model.RecordingEntry;
+import de.gotovoid.service.sensors.AbstractSensor;
 
 /**
  * Created by DJ on 05/01/18.
@@ -59,7 +60,7 @@ public class RecordingDisplayViewModel extends AndroidViewModel {
     /**
      * The current location.
      */
-    private LiveData<ExtendedGeoCoordinate> mLocation;
+    private LiveData<AbstractSensor.Result<ExtendedGeoCoordinate>> mLocation;
 
     /**
      * Constructor taking the {@link Application}.
@@ -138,7 +139,7 @@ public class RecordingDisplayViewModel extends AndroidViewModel {
      *
      * @return the current location
      */
-    public LiveData<ExtendedGeoCoordinate> getLocation() {
+    public LiveData<AbstractSensor.Result<ExtendedGeoCoordinate>> getLocation() {
         return mLocation;
     }
 

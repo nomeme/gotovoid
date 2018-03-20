@@ -19,7 +19,7 @@ import de.gotovoid.database.model.RecordingEntry;
 /**
  * Handler for {@link AbstractSensor} instances.
  * Manages the available {@link AbstractSensor} instances and provides methods to
- * register and unregister {@link AbstractSensor.Observer}s.
+ * addObserver and unregister {@link AbstractSensor.Observer}s.
  */
 public class SensorHandler {
     private static final String TAG = SensorHandler.class.getSimpleName();
@@ -42,7 +42,7 @@ public class SensorHandler {
      */
     private final RecordingSensor mRecordingSensor;
     /**
-     * Observer to write recording data to database.
+     * Observable to write recording data to database.
      */
     private final RecordingEntryObserver mRecordingEntryObserver;
     /**
