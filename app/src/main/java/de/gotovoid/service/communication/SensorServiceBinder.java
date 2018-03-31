@@ -251,7 +251,7 @@ public class SensorServiceBinder extends ISensorService.Stub {
                 break;
         }
 
-        // Create an Observable for a sensor to be stored and managed.
+        // Create an IObservable for a sensor to be stored and managed.
         if (observer == null) {
             return null;
         } else {

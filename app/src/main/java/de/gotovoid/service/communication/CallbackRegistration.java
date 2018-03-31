@@ -2,6 +2,7 @@ package de.gotovoid.service.communication;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 
 import de.gotovoid.service.sensors.SensorType;
 
@@ -106,7 +107,10 @@ public class CallbackRegistration implements Parcelable {
     }
 
     @Override
-    public void writeToParcel(final Parcel dest, int flags) {
+    public void writeToParcel(@NonNull final Parcel dest, int flags) {
+        if (dest == null) {
+            return;
+        }
         dest.writeInt(mType.ordinal());
         dest.writeInt(mCallbackId);
         dest.writeLong(mUpdateFrequency);

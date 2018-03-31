@@ -212,6 +212,7 @@ public class SensorServiceMessenger {
         @Override
         public void onBindingDied(final ComponentName name) {
             // Do nothing.
+            // TODO: implement
         }
     }
 }

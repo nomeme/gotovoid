@@ -243,7 +243,7 @@ public abstract class AbstractSensor<Type extends Serializable> {
      *
      * @param <T> type of the sensor data
      */
-    public static class Result<T extends Serializable> implements Serializable{
+    public static class Result<T extends Serializable> implements Serializable {
         private final SensorState mSensorState;
         private final T mValue;
 
