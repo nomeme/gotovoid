@@ -140,6 +140,7 @@ public class RecordingDisplayViewModel extends AndroidViewModel {
      * @return the current location
      */
     public LiveData<AbstractSensor.Result<ExtendedGeoCoordinate>> getLocation() {
+        Log.d(TAG, "getLocation() called");
         return mLocation;
     }
 

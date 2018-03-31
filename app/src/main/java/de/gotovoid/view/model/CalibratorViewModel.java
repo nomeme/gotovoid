@@ -10,12 +10,15 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import de.gotovoid.service.repository.RepositoryLiveData;
+import de.gotovoid.service.repository.RepositoryObserver;
 import de.gotovoid.service.sensors.AbstractSensor;
 import de.gotovoid.service.sensors.LocationSensor;
 import de.gotovoid.database.AppDatabase;
 import de.gotovoid.database.model.CalibratedAltitude;
 import de.gotovoid.service.repository.LocationRepository;
 import de.gotovoid.service.sensors.PressureSensor;
+import de.gotovoid.service.sensors.SensorState;
 import de.gotovoid.service.sensors.SensorType;
 import de.gotovoid.view.CalibratorFragment;
 
@@ -38,9 +41,9 @@ public class CalibratorViewModel extends AndroidViewModel {
     private final AppDatabase mDatabase;
 
     /**
-     * Observable for pressure sensor updates.
+     * IObservable for pressure sensor updates.
      */
-    private final LocationRepository.ServiceObserver<AbstractSensor.Result<Float>> mPressureObserver;
+    private final PressureObserver mPressureObserver;
 
     /**
      * Thread to handle background tasks, like modifying database entries.
@@ -61,11 +64,11 @@ public class CalibratorViewModel extends AndroidViewModel {
      * Value holder for the current pressure.
      */
     // TODO: make this handle calibrating state
-    final private MutableLiveData<Float> mCurrentPressure;
+    final private MutableLiveData<AbstractSensor.Result<Float>> mCurrentPressure;
     /**
      * Value holder for the current altitude.
      */
-    final private MutableLiveData<Integer> mCurrentAltitude;
+    final private MutableLiveData<AbstractSensor.Result<Integer>> mCurrentAltitude;
 
     /**
      * Stores the calibrated altitude.
@@ -93,22 +96,11 @@ public class CalibratorViewModel extends AndroidViewModel {
         mDatabase = AppDatabase.getDatabaseInstance(application);
 
         // Create the pressure sensor observer to be notified by the repository.
-        mPressureObserver = new LocationRepository.ServiceObserver<AbstractSensor.Result<Float>>(
-                UPDATE_FREQUENCY,
-                SensorType.PRESSURE) {
-            @Override
-            public void onChange(final AbstractSensor.Result<Float> value) {
-                // Notify the pressure LiveData.
-                // TODO: handle calibrating state
-                mCurrentPressure.postValue(value.getValue());
-                // Notify the altitude LiveData
-                mCurrentAltitude.postValue(calculateAltitude(value.getValue()));
-            }
-        };
+        mPressureObserver = new PressureObserver();
         // Create the LiveData object for the current pressure
-        mCurrentPressure = new LocationRepository.ObserverLiveData<>(new RegistrationHandler());
+        mCurrentPressure = new RepositoryLiveData<Float>(new RegistrationHandler());
         // Create the LiveData object for the altitude
-        mCurrentAltitude = new LocationRepository.ObserverLiveData<>(new RegistrationHandler());
+        mCurrentAltitude = new RepositoryLiveData<Integer>(new RegistrationHandler());
 
         // We need to extract the data using a background thread
         // TODO: maybe use LiveData instead
@@ -137,7 +129,7 @@ public class CalibratorViewModel extends AndroidViewModel {
      *
      * @return the altitude
      */
-    public LiveData<Integer> getAltitude() {
+    public LiveData<AbstractSensor.Result<Integer>> getAltitude() {
         return mCurrentAltitude;
     }
 
@@ -146,7 +138,7 @@ public class CalibratorViewModel extends AndroidViewModel {
      *
      * @return the pressure
      */
-    public LiveData<Float> getPressure() {
+    public LiveData<AbstractSensor.Result<Float>> getPressure() {
         return mCurrentPressure;
     }
 
@@ -158,9 +150,9 @@ public class CalibratorViewModel extends AndroidViewModel {
     public void setAltitude(final Integer altitude) {
         mIsAltitudeChanged = true;
         mCalibratedAltitude = new CalibratedAltitude(0,
-                mCurrentPressure.getValue(),
+                mCurrentPressure.getValue().getValue(),
                 altitude);
-        mCurrentAltitude.postValue(altitude);
+        mCurrentAltitude.postValue(new AbstractSensor.Result<>(SensorState.RUNNING, altitude));
     }
 
     /**
@@ -216,18 +208,54 @@ public class CalibratorViewModel extends AndroidViewModel {
     }
 
     /**
+     * {@link RepositoryObserver} for the pressure data.
+     */
+    private class PressureObserver extends RepositoryObserver<Float> {
+        private boolean mIsRegistered;
+
+        /**
+         * Constructor.
+         */
+        public PressureObserver() {
+            super(UPDATE_FREQUENCY, SensorType.PRESSURE);
+        }
+
+        @Override
+        public void onChange(final AbstractSensor.Result<Float> data) {
+            // Notify the pressure LiveData.
+            // TODO: handle calibrating state
+            mCurrentPressure.postValue(data);
+            // Notify the altitude LiveData
+            mCurrentAltitude.postValue(new AbstractSensor.Result<>(data.getSensorState(),
+                    calculateAltitude(data.getValue())));
+        }
+
+        public boolean isRegistered() {
+            return mIsRegistered;
+        }
+
+        public void setRegistered(boolean registered) {
+            mIsRegistered = registered;
+        }
+    }
+
+    /**
      * This class handles the registration of the
      * {@link LocationSensor.Observer} when the
      * {@link LiveData}'s {@link LiveData#hasActiveObservers()} changes.
      */
     private class RegistrationHandler
-            implements LocationRepository.ObserverLiveData.RegistrationHandler {
+            implements RepositoryLiveData.RegistrationHandler {
         @Override
         public void onRegister() {
+            // TODO: only register once.
             Log.d(TAG, "onRegister() called");
             Log.d(TAG, "onRegister: " + mRepository);
             if (mRepository != null) {
-                mRepository.addObserver(mPressureObserver);
+                if (!mPressureObserver.isRegistered()) {
+                    mRepository.addObserver(mPressureObserver);
+                    mPressureObserver.setRegistered(true);
+                }
             }
         }
 
@@ -237,8 +265,10 @@ public class CalibratorViewModel extends AndroidViewModel {
             Log.d(TAG, "onUnregister: " + mRepository);
             if (mRepository != null) {
                 if (!mCurrentAltitude.hasActiveObservers()
-                        && !mCurrentPressure.hasActiveObservers())
+                        && !mCurrentPressure.hasActiveObservers()) {
                     mRepository.removeObserver(mPressureObserver);
+                    mPressureObserver.setRegistered(false);
+                }
             }
         }
     }

@@ -19,6 +19,7 @@ import de.gotovoid.database.AppDatabase;
 import de.gotovoid.database.model.Recording;
 import de.gotovoid.database.model.RecordingEntry;
 import de.gotovoid.service.repository.LocationRepository;
+import de.gotovoid.service.repository.RepositoryObserver;
 import de.gotovoid.service.sensors.AbstractSensor;
 import de.gotovoid.service.sensors.SensorType;
 
@@ -47,9 +48,9 @@ public class RecorderViewModel extends AndroidViewModel {
      */
     private final Handler mHandler;
     /**
-     * Observable for the repository.
+     * IObservable for the repository.
      */
-    private final LocationRepository.ServiceObserver<AbstractSensor.Result<Long>> mObserver;
+    private final RepositoryObserver<Long> mObserver;
 
     /**
      * The {@link List} of {@link RecordingEntry}s to be displayed.
@@ -80,7 +81,7 @@ public class RecorderViewModel extends AndroidViewModel {
          Room not yet provides events through inter process communication.
           */
         mEntries = new MutableLiveData<>();
-        mObserver = new LocationRepository.ServiceObserver<AbstractSensor.Result<Long>>(
+        mObserver = new RepositoryObserver<Long>(
                 UPDATE_FREQUENCY,
                 SensorType.RECORDING) {
 

@@ -86,43 +86,31 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
 
         // Add listener for the rotary input to change the calibrated altitude value.
         mProgress = (CircularProgress) view.findViewById(R.id.progress);
-        mProgress.setOnProgressChangedListener(new CircularProgress.OnProgressChangedListener() {
-            @Override
-            public void onProgressChanged(final float progress) {
-                Log.d(TAG, "onProgressChanged() called with: progress = [" + progress + "]");
-                Integer altitude = mViewModel.getAltitude().getValue();
-                if (altitude == null) {
-                    altitude = 0;
-                }
-                altitude += (int) progress;
-                mViewModel.setAltitude(altitude);
-            }
-        });
+        mProgress.setOnProgressChangedListener(
+                (progress) -> {
+                    Integer altitude = mViewModel.getAltitude().getValue().getValue();
+                    if (altitude == null) {
+                        altitude = 0;
+                    }
+                    altitude += (int) progress;
+                    mViewModel.setAltitude(altitude);
+                });
 
         // Observe the altitude changes and adapt the ui.
-        mViewModel.getAltitude().observe(this, new Observer<Integer>() {
-            @Override
-            public void onChanged(@Nullable final Integer altitude) {
-                Log.d(TAG, "onChanged() called with: altitude = [" + altitude + "]");
-                if (altitude == null) {
-                    return;
-                }
-                showAltitude(altitude);
+        mViewModel.getAltitude().observe(this, (result) -> {
+            if (result == null) {
+                return;
             }
+            showAltitude(result.getValue());
         });
 
         // Observe the pressure changes and adapt the ui.
-        mViewModel.getPressure().observe(this, new Observer<Float>() {
-            @Override
-            public void onChanged(@Nullable final Float pressure) {
-                Log.d(TAG, "onChanged() called with: aFloat = [" + pressure + "]");
-                if (pressure == null) {
-                    return;
-                }
-                showPressure(pressure);
+        mViewModel.getPressure().observe(this, (result) -> {
+            if (result == null) {
+                return;
             }
+            showPressure(result.getValue());
         });
-
         return view;
     }
 
@@ -192,7 +180,7 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
     @Override
     public void onUpdateAmbient() {
         Log.d(TAG, "onUpdateAmbient() called");
-        showAltitude(mViewModel.getAltitude().getValue());
-        showPressure(mViewModel.getPressure().getValue());
+        showAltitude(mViewModel.getAltitude().getValue().getValue());
+        showPressure(mViewModel.getPressure().getValue().getValue());
     }
 }
