@@ -5,19 +5,13 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventCallback;
 import android.hardware.SensorManager;
-import android.util.Log;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
-import java.util.ResourceBundle;
 
 /**
  * Created by DJ on 25/02/18.
@@ -26,8 +20,6 @@ import java.util.ResourceBundle;
 /**
  * Verify the functionality of the {@link PressureSensor}.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Log.class})
 public class PressureSensorTest extends GenericSensorTest {
     private PressureSensor mPressureSensor;
     private SensorManager mSensorManager;
@@ -38,7 +30,6 @@ public class PressureSensorTest extends GenericSensorTest {
      */
     @Before
     public void before() {
-        PowerMockito.mockStatic(Log.class);
         final Context context = Mockito.mock(Context.class);
         mSensorManager = Mockito.mock(SensorManager.class);
         mSensor = Mockito.mock(Sensor.class);

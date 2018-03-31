@@ -1,16 +1,8 @@
 package de.gotovoid.service.sensors;
 
-import android.util.Log;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -18,7 +10,6 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -28,8 +19,6 @@ import static org.junit.Assert.assertThat;
 /**
  * Verify the basic functionality of the {@link AbstractSensor}.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Log.class})
 public abstract class GenericSensorTest {
 
     /**
@@ -37,7 +26,6 @@ public abstract class GenericSensorTest {
      */
     @Before
     public void before() {
-        PowerMockito.mockStatic(Log.class);
     }
 
     /**
@@ -214,7 +202,6 @@ public abstract class GenericSensorTest {
     /**
      * Test for the {@link StateEvaluator}.
      */
-    @RunWith(PowerMockRunner.class)
     public static class StateEvaluatorTest {
         private List<AbstractSensor.Observer<Integer>> mEmptyList;
         private List<AbstractSensor.Observer<Integer>> mObserverList;

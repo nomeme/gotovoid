@@ -1,14 +1,8 @@
 package de.gotovoid.service.sensors;
 
-import android.util.Log;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.Serializable;
 
@@ -23,8 +17,6 @@ import de.gotovoid.domain.model.geodata.ExtendedGeoCoordinate;
 /**
  * Verify the functionality of the {@link RecordingSensor}.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Log.class})
 public class RecordingSensorTest extends GenericSensorTest {
     private RecordingSensor mRecordingSensor;
     private LocationSensor mLocationSensor;
@@ -36,7 +28,6 @@ public class RecordingSensorTest extends GenericSensorTest {
      */
     @Before
     public void before() {
-        PowerMockito.mockStatic(Log.class);
         mLocationSensor = Mockito.mock(LocationSensor.class);
         mPressureSensor = Mockito.mock(PressureSensor.class);
         mObserver = Mockito.mock(AbstractSensor.Observer.class);
@@ -70,6 +61,7 @@ public class RecordingSensorTest extends GenericSensorTest {
      */
     @Test
     public void stopRecording() {
+        getSensor().startRecording(0);
         getSensor().stopRecording();
         Mockito.verify(mLocationSensor, Mockito.times(1))
                 .removeObserver(Mockito.any(AbstractSensor.Observer.class));

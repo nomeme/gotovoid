@@ -2,15 +2,10 @@ package de.gotovoid.service.communication;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import de.gotovoid.service.sensors.SensorType;
 
@@ -24,8 +19,6 @@ import static org.hamcrest.Matchers.*;
 /**
  * Verifies the functionality of the {@link SensorServiceMessenger}.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Log.class})
 public class SensorServiceMessengerTest {
     private static final long RECORDING_ID = 12345;
     private SensorServiceMessenger mMenssenger;
@@ -38,7 +31,6 @@ public class SensorServiceMessengerTest {
      */
     @Before
     public void before() {
-        PowerMockito.mockStatic(Log.class);
         mConnection = Mockito.mock(SensorServiceMessenger.SensorServiceConnection.class);
         mContext = Mockito.mock(Context.class);
         mSensorService = Mockito.mock(ISensorService.class);

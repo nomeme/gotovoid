@@ -6,19 +6,15 @@ import android.os.Parcel;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.modules.junit4.PowerMockRunnerDelegate;
+import org.robolectric.ParameterizedRobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import de.gotovoid.BuildConfig;
 import de.gotovoid.service.sensors.SensorType;
 
 import static org.junit.Assert.*;
@@ -30,23 +26,30 @@ import static org.hamcrest.Matchers.*;
 /**
  * Test to verify the functionality of the {@link CallbackRegistration}.
  */
-@RunWith(PowerMockRunner.class)
-@PowerMockRunnerDelegate(Parameterized.class)
-@PrepareForTest({Parcel.class})
+@RunWith(ParameterizedRobolectricTestRunner.class)
+@Config(constants = BuildConfig.class)
 public class CallbackRegistrationTest {
 
-    @Parameter(value = 0)
     public SensorType mSensorType;
 
-    @Parameter(value = 1)
     public long mUpdateFrequency;
 
-    @Parameter(value = 2)
     public ISensorServiceCallback mCallback;
+
+    /**
+     * Constructor.
+     *
+     * @param type            the {@link SensorType}
+     * @param updateFrequency the update frequency
+     */
+    public CallbackRegistrationTest(final SensorType type, final long updateFrequency) {
+        mSensorType = type;
+        mUpdateFrequency = updateFrequency;
+    }
 
     @Before
     public void before() {
-        PowerMockito.mockStatic(Parcel.class);
+        mCallback = Mockito.mock(ISensorServiceCallback.class);
     }
 
     /**
@@ -54,18 +57,14 @@ public class CallbackRegistrationTest {
      *
      * @return the parameters
      */
-    @Parameters(name = "type: {0}, freq: {1}, callback: {2}")
+    @ParameterizedRobolectricTestRunner.Parameters(name = "type: {0}, freq: {1}, callback: {2}")
     public static Collection<Object[]> initParameters() {
         Long[] updateFrequencies = {0l, 10l, 100l, 1000l, 10000l, 100000l};
-        ISensorServiceCallback[] callbacks = {Mockito.mock(ISensorServiceCallback.class),
-                Mockito.mock(ISensorServiceCallback.class),
-                Mockito.mock(ISensorServiceCallback.class)};
+
         List<Object[]> list = new ArrayList<>();
         for (final SensorType type : SensorType.values()) {
             for (final long updateFrequency : updateFrequencies) {
-                for (final ISensorServiceCallback calback : callbacks) {
-                    list.add(new Object[]{type, updateFrequency, calback});
-                }
+                list.add(new Object[]{type, updateFrequency});
             }
         }
         return list;
@@ -82,6 +81,34 @@ public class CallbackRegistrationTest {
         assertThat(registration.getType(), is(mSensorType));
         assertThat(registration.getUpdateFrequency(), is(mUpdateFrequency));
         assertThat(registration.getCallbackId(), is(System.identityHashCode(mCallback)));
+    }
+
+    /**
+     * Verifies the id algorithm for equality.
+     */
+    @Test
+    public void verifyEqualRegistration() {
+        final CallbackRegistration registration1 = new CallbackRegistration(mSensorType,
+                mCallback,
+                mUpdateFrequency);
+        final CallbackRegistration registration2 = new CallbackRegistration(mSensorType,
+                mCallback,
+                mUpdateFrequency);
+        assertThat(registration1.getCallbackId(), is(registration2.getCallbackId()));
+    }
+
+    /**
+     * Verifies the id algorithm for inequality.
+     */
+    @Test
+    public void verifyUnequalRegistration() {
+        final CallbackRegistration registration1 = new CallbackRegistration(mSensorType,
+                Mockito.mock(ISensorServiceCallback.class),
+                mUpdateFrequency);
+        final CallbackRegistration registration2 = new CallbackRegistration(mSensorType,
+                Mockito.mock(ISensorServiceCallback.class),
+                mUpdateFrequency);
+        assertThat(registration1.getCallbackId(), not(registration2.getCallbackId()));
     }
 
     /**

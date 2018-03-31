@@ -175,7 +175,7 @@ public class LocationSensorTest extends GenericSensorTest {
          *
          * @param context the {@link Context}
          */
-        TestLocationSensor(Context context) {
+        TestLocationSensor(final Context context) {
             super(context);
         }
 
@@ -184,7 +184,7 @@ public class LocationSensorTest extends GenericSensorTest {
          *
          * @param provider the {@link FusedLocationProviderClient}
          */
-        TestLocationSensor(FusedLocationProviderClient provider) {
+        TestLocationSensor(final FusedLocationProviderClient provider) {
             super(provider);
         }
 

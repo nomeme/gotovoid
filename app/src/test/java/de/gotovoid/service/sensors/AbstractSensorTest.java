@@ -1,14 +1,9 @@
 package de.gotovoid.service.sensors;
 
-import android.util.Log;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 
 import static org.junit.Assert.*;
@@ -21,14 +16,11 @@ import static org.hamcrest.Matchers.*;
 /**
  * Verify the basic functionality of the {@link AbstractSensor}.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({Log.class})
 public abstract class AbstractSensorTest extends GenericSensorTest {
     private Sensor mSensor;
 
     @Before
     public void before() {
-        PowerMockito.mockStatic(Log.class);
         mSensor = new Sensor(Mockito.mock(AbstractSensor.StateEvaluator.class));
     }
 

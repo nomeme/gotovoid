@@ -25,6 +25,10 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -47,13 +51,16 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     compileOnly 'com.google.android.wearable:wearable:2.1.0'
     // Tests
+    testCompile 'android.arch.persistence.room:testing:1.0.0'
+    testCompile 'android.arch.core:core-testing:1.1.1'
+
     testCompile 'com.android.support:support-annotations:27.0.0'
     testCompile 'com.android.support.test:runner:1.0.1'
     testCompile 'com.android.support.test:rules:1.0.1'
     testCompile 'org.robolectric:robolectric:3.3.2'
-    testCompile 'org.powermock:powermock:1.6.5'
-    testCompile 'org.powermock:powermock-api-mockito:1.6.5'
-    testCompile 'org.powermock:powermock-module-junit4:1.6.5'
+    //testCompile 'org.mockito:mockito-all:1.10.19'
+    testCompile "org.mockito:mockito-core:2.7.19"
+
     //androidTestUtil "com.android.support.test:orchestrator:1.0.1"
     testCompile 'junit:junit:4.12'
 }
