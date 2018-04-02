@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import de.gotovoid.components.arcitecture.ObserverLiveData;
 import de.gotovoid.service.repository.RepositoryLiveData;
 import de.gotovoid.service.repository.RepositoryObserver;
 import de.gotovoid.service.sensors.AbstractSensor;
@@ -55,6 +56,7 @@ public class CalibratorViewModel extends AndroidViewModel {
      */
     private final Handler mHandler;
 
+
     /**
      * The repository for location data.
      */
@@ -68,7 +70,7 @@ public class CalibratorViewModel extends AndroidViewModel {
     /**
      * Value holder for the current altitude.
      */
-    final private MutableLiveData<AbstractSensor.Result<Integer>> mCurrentAltitude;
+    final private MutableLiveData<Float> mCurrentAltitude;
 
     /**
      * Stores the calibrated altitude.
@@ -100,15 +102,13 @@ public class CalibratorViewModel extends AndroidViewModel {
         // Create the LiveData object for the current pressure
         mCurrentPressure = new RepositoryLiveData<Float>(new RegistrationHandler());
         // Create the LiveData object for the altitude
-        mCurrentAltitude = new RepositoryLiveData<Integer>(new RegistrationHandler());
+        mCurrentAltitude = new ObserverLiveData<Float>(new RegistrationHandler());
+        //mCurrentAltitude = new RepositoryLiveData<Float>(new RegistrationHandler());
 
         // We need to extract the data using a background thread
         // TODO: maybe use LiveData instead
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mCalibratedAltitude = mDatabase.getCalibratedPressureDao().getCalibratedPressure();
-            }
+        mHandler.post(() -> {
+            mCalibratedAltitude = mDatabase.getCalibratedPressureDao().getCalibratedPressure();
         });
     }
 
@@ -129,7 +129,7 @@ public class CalibratorViewModel extends AndroidViewModel {
      *
      * @return the altitude
      */
-    public LiveData<AbstractSensor.Result<Integer>> getAltitude() {
+    public LiveData<Float> getAltitude() {
         return mCurrentAltitude;
     }
 
@@ -147,12 +147,13 @@ public class CalibratorViewModel extends AndroidViewModel {
      *
      * @param altitude altitude to be set
      */
-    public void setAltitude(final Integer altitude) {
+    public void setAltitude(final Float altitude) {
         mIsAltitudeChanged = true;
         mCalibratedAltitude = new CalibratedAltitude(0,
                 mCurrentPressure.getValue().getValue(),
-                altitude);
-        mCurrentAltitude.postValue(new AbstractSensor.Result<>(SensorState.RUNNING, altitude));
+                // TODO: make float!
+                altitude.intValue());
+        mCurrentAltitude.postValue(altitude);
     }
 
     /**
@@ -189,13 +190,13 @@ public class CalibratorViewModel extends AndroidViewModel {
      * @return the new altitude
      */
     @Nullable
-    private Integer calculateAltitude(@Nullable final Float currentPressure) {
+    private Float calculateAltitude(@Nullable final Float currentPressure) {
         Log.d(TAG, "calculateAltitude() called with: currentPressure = ["
                 + currentPressure + "]");
         if (mCalibratedAltitude != null
                 && currentPressure != null) {
             // Use the calibrated altitude to calculate the new altitude using the current pressure.
-            return mCalibratedAltitude.calculateHeight(currentPressure);
+            return (float) mCalibratedAltitude.calculateHeight(currentPressure);
         }
         return null;
     }
@@ -226,8 +227,7 @@ public class CalibratorViewModel extends AndroidViewModel {
             // TODO: handle calibrating state
             mCurrentPressure.postValue(data);
             // Notify the altitude LiveData
-            mCurrentAltitude.postValue(new AbstractSensor.Result<>(data.getSensorState(),
-                    calculateAltitude(data.getValue())));
+            mCurrentAltitude.postValue(calculateAltitude(data.getValue()));
         }
 
         public boolean isRegistered() {

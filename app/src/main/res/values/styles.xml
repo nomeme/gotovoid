@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="TextAppearance.Gotovoid.Large" parent="android:TextAppearance.DeviceDefault.Large" />
+
+    <style name="TextAppearance.Gotovoid.Medium" parent="android:TextAppearance.DeviceDefault.Medium" />
+
+    <style name="TextAppearance.Gotovoid.Small" parent="android:TextAppearance.DeviceDefault.Small" />
+</resources>

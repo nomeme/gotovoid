@@ -1,7 +1,7 @@
 package de.gotovoid.view;
 
-import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -12,8 +12,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
+import de.gotovoid.databinding.CalibratorFragmentBinding;
 import de.gotovoid.service.repository.LocationRepository;
 import de.gotovoid.view.model.CalibratorViewModel;
 import de.gotovoid.R;
@@ -32,22 +32,7 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
      * {@link android.arch.lifecycle.ViewModel} for the {@link CalibratorFragment}.
      */
     private CalibratorViewModel mViewModel;
-    /**
-     * View to handle circular input.
-     */
-    private CircularProgress mProgress;
-    /**
-     * {@link TextView} for the altitude.
-     */
-    private TextView mAltitudeText;
-    /**
-     * {@link TextView} for the pressure.
-     */
-    private TextView mPressureText;
-    /**
-     * Layout for dismissing the fragment via swipe.
-     */
-    private SwipeDismissFrameLayout mDismissLayout;
+    private CalibratorFragmentBinding mBinding;
 
     @Override
     public void onCreate(@Nullable final Bundle savedInstanceState) {
@@ -65,35 +50,35 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
         Log.d(TAG, "onCreateView() called with: inflater = [" + inflater
                 + "], container = [" + container
                 + "], savedInstanceState = [" + savedInstanceState + "]");
-        View rootView = super.onCreateView(inflater, container, savedInstanceState);
-        final View view = inflater.inflate(R.layout.calibrator_fragment, container, false);
+        mBinding = DataBindingUtil.inflate(inflater,
+                R.layout.calibrator_fragment,
+                container,
+                false);
 
-        mAltitudeText = view.findViewById(R.id.altitude);
         showAltitude(null);
-        mPressureText = view.findViewById(R.id.pressure);
         showPressure(null);
 
 
         // Add the back action.
-        mDismissLayout = (SwipeDismissFrameLayout) view.findViewById(R.id.dismiss_layout);
-        mDismissLayout.addCallback(new Callback() {
+        mBinding.dismissLayout.addCallback(new Callback() {
             @Override
             public void onDismissed(final SwipeDismissFrameLayout layout) {
                 getFragmentManager().popBackStack();
-                mDismissLayout.setVisibility(View.GONE);
+                mBinding.dismissLayout.setVisibility(View.GONE);
             }
         });
 
         // Add listener for the rotary input to change the calibrated altitude value.
-        mProgress = (CircularProgress) view.findViewById(R.id.progress);
-        mProgress.setOnProgressChangedListener(
+        mBinding.progress.setOnProgressChangedListener(
                 (progress) -> {
-                    Integer altitude = mViewModel.getAltitude().getValue().getValue();
+                    // TODO: use float value!
+                    Integer altitude = mViewModel.getAltitude().getValue().intValue();
                     if (altitude == null) {
                         altitude = 0;
                     }
                     altitude += (int) progress;
-                    mViewModel.setAltitude(altitude);
+                    // TODO: use float value!
+                    mViewModel.setAltitude(altitude.floatValue());
                 });
 
         // Observe the altitude changes and adapt the ui.
@@ -101,7 +86,7 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
             if (result == null) {
                 return;
             }
-            showAltitude(result.getValue());
+            showAltitude(result);
         });
 
         // Observe the pressure changes and adapt the ui.
@@ -110,8 +95,9 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
                 return;
             }
             showPressure(result.getValue());
+            mBinding.calibrating.setState(result.getSensorState());
         });
-        return view;
+        return mBinding.getRoot();
     }
 
     /**
@@ -119,13 +105,13 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
      *
      * @param altitude altitude value to be displayed
      */
-    private void showAltitude(final Integer altitude) {
+    private void showAltitude(final Float altitude) {
         Log.d(TAG, "showAltitude() called with: altitude = [" + altitude + "]");
         if (altitude == null) {
             // TODO: add string resource
-            mAltitudeText.setText("---");
+            mBinding.altitude.setText("---");
         } else {
-            mAltitudeText.setText(altitude + " m");
+            mBinding.altitude.setText(altitude + " m");
         }
     }
 
@@ -138,9 +124,9 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
         Log.d(TAG, "showPressure() called with: pressure = [" + pressure + "]");
         if (pressure == null) {
             // TODO: add string resource
-            mPressureText.setText("---");
+            mBinding.pressure.setText("---");
         } else {
-            mPressureText.setText(pressure + " hPa");
+            mBinding.pressure.setText(pressure + " hPa");
         }
     }
 
@@ -148,7 +134,7 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
     public void onResume() {
         Log.d(TAG, "onResume() called");
         super.onResume();
-        mProgress.requestFocus();
+        mBinding.progress.requestFocus();
     }
 
     @Override
@@ -163,24 +149,25 @@ public class CalibratorFragment extends Fragment implements IUpdateableAmbientMo
 
     @Override
     public void setIsAmbient(final boolean isAmbient) {
-        mProgress.setIsAmbient(isAmbient);
+        // TODO: couldn't this be solved with style??
+        mBinding.progress.setIsAmbient(isAmbient);
         if (isAmbient) {
-            mDismissLayout.setBackgroundColor(
+            mBinding.dismissLayout.setBackgroundColor(
                     ContextCompat.getColor(getContext(), R.color.black));
-            mAltitudeText.getPaint().setAntiAlias(false);
-            mPressureText.getPaint().setAntiAlias(false);
+            mBinding.altitude.getPaint().setAntiAlias(false);
+            mBinding.pressure.getPaint().setAntiAlias(false);
         } else {
-            mDismissLayout.setBackgroundColor(
+            mBinding.dismissLayout.setBackgroundColor(
                     ContextCompat.getColor(getContext(), R.color.background_default));
-            mAltitudeText.getPaint().setAntiAlias(true);
-            mPressureText.getPaint().setAntiAlias(true);
+            mBinding.altitude.getPaint().setAntiAlias(true);
+            mBinding.pressure.getPaint().setAntiAlias(true);
         }
     }
 
     @Override
     public void onUpdateAmbient() {
         Log.d(TAG, "onUpdateAmbient() called");
-        showAltitude(mViewModel.getAltitude().getValue().getValue());
+        showAltitude(mViewModel.getAltitude().getValue());
         showPressure(mViewModel.getPressure().getValue().getValue());
     }
 }

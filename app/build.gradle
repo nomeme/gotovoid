@@ -21,11 +21,13 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    dataBinding {
+        enabled = true
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-
     testOptions {
         unitTests.returnDefaultValues = true
     }
@@ -33,7 +35,7 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.google.android.support:wearable:2.1.0'
+    implementation 'com.google.android.support:wearable:2.2.0'
     implementation 'com.google.android.gms:play-services-wearable:11.2.0'
     implementation 'com.android.support:percent:27.0.0'
     implementation 'com.android.support:support-v4:27.0.0'
@@ -49,7 +51,7 @@ dependencies {
     annotationProcessor "android.arch.persistence.room:compiler:1.0.0"
     // LiveData
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    compileOnly 'com.google.android.wearable:wearable:2.1.0'
+    compileOnly 'com.google.android.wearable:wearable:2.2.0'
     // Tests
     testCompile 'android.arch.persistence.room:testing:1.0.0'
     testCompile 'android.arch.core:core-testing:1.1.1'
