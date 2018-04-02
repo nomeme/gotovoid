@@ -202,6 +202,7 @@ public abstract class GenericSensorTest {
     /**
      * Test for the {@link StateEvaluator}.
      */
+    // TODO: add test that verifies that while running calibrating can not be reached again!
     public static class StateEvaluatorTest {
         private List<AbstractSensor.Observer<Integer>> mEmptyList;
         private List<AbstractSensor.Observer<Integer>> mObserverList;

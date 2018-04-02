@@ -89,6 +89,7 @@ public abstract class AbstractSensor<Type extends Serializable> {
             if (mObservers.isEmpty()) {
                 Log.d(TAG, "removeObserver: stopSensor");
                 stopSensor();
+                mStateEvaluator.stop();
             } else if (observer != null) {
                 if (mUpdateFrequency >= observer.getUpdateFrequency()) {
                     mUpdateFrequency = Integer.MAX_VALUE;
@@ -299,6 +300,7 @@ public abstract class AbstractSensor<Type extends Serializable> {
             mBufferSize = bufferSize;
             mTolerance = tolerance;
             mBuffer = new ArrayList<>();
+            mOldSensorState = SensorState.STOPPED;
         }
 
         /**
@@ -332,6 +334,7 @@ public abstract class AbstractSensor<Type extends Serializable> {
          */
         protected SensorState evaluateState(final Type value,
                                             final List<Observer<Type>> observers) {
+            Log.d(TAG, "evaluateState: old state: " + mOldSensorState);
             if (SensorState.RUNNING.equals(mOldSensorState)) {
                 return mOldSensorState;
             }
@@ -355,6 +358,7 @@ public abstract class AbstractSensor<Type extends Serializable> {
                     }
                 }
             }
+            mOldSensorState = state;
             return state;
         }
 
