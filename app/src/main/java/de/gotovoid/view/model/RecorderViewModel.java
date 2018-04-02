@@ -21,6 +21,7 @@ import de.gotovoid.database.model.RecordingEntry;
 import de.gotovoid.service.repository.LocationRepository;
 import de.gotovoid.service.repository.RepositoryObserver;
 import de.gotovoid.service.sensors.AbstractSensor;
+import de.gotovoid.service.sensors.SensorState;
 import de.gotovoid.service.sensors.SensorType;
 
 /**
@@ -56,6 +57,11 @@ public class RecorderViewModel extends AndroidViewModel {
      * The {@link List} of {@link RecordingEntry}s to be displayed.
      */
     private final MutableLiveData<List<RecordingEntry>> mEntries;
+
+    /**
+     * The {@link SensorState}.
+     */
+    private final MutableLiveData<SensorState> mState;
     /**
      * Repository providing sensor data.
      */
@@ -81,6 +87,7 @@ public class RecorderViewModel extends AndroidViewModel {
          Room not yet provides events through inter process communication.
           */
         mEntries = new MutableLiveData<>();
+        mState = new MutableLiveData<>();
         mObserver = new RepositoryObserver<Long>(
                 UPDATE_FREQUENCY,
                 SensorType.RECORDING) {
@@ -89,14 +96,19 @@ public class RecorderViewModel extends AndroidViewModel {
             public void onChange(final AbstractSensor.Result<Long> result) {
                 Log.d(TAG, "onRecordingUpdate() called with: recordingId = ["
                         + result + "]");
-                mHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
+                if (result == null) {
+                    return;
+                }
+                if (SensorState.RUNNING.equals(result.getSensorState())) {
+                    mHandler.post(() -> {
+                        // Get the TrackEntries and update the LiveData.
                         mEntries.postValue(mDatabase
                                 .getRecordingEntryDao()
                                 .getTrackEntries(result.getValue()));
-                    }
-                });
+                        // Update the SensorState LiveData.
+                        mState.postValue(result.getSensorState());
+                    });
+                }
             }
         };
     }
@@ -111,12 +123,23 @@ public class RecorderViewModel extends AndroidViewModel {
     }
 
     /**
-     * Return the {@link RecordingEntry} objects to be displayed.
+     * Returns the {@link RecordingEntry} objects to be displayed.
      *
      * @return the {@link RecordingEntry}
      */
+    @NonNull
     public LiveData<List<RecordingEntry>> getEntries() {
         return mEntries;
+    }
+
+    /**
+     * Returns the current {@link SensorState}.
+     *
+     * @return the {@link SensorState}
+     */
+    @NonNull
+    public LiveData<SensorState> getState() {
+        return mState;
     }
 
     /**
@@ -130,30 +153,27 @@ public class RecorderViewModel extends AndroidViewModel {
          Use the Handler to add a new Recording to the database and tell the repository to
          start a new recording.
           */
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                final long timeStamp = System.currentTimeMillis();
-                // Create the date format for the name.
-                SimpleDateFormat format = new SimpleDateFormat(
-                        // TODO: store this somewhere centralized.
-                        "yyyy-MM-dd'T'HH:mm:ss",
-                        Locale.getDefault());
-                // Create the new recording.
-                Recording recording = new Recording(
-                        format.format(new Date(timeStamp)),
-                        type,
-                        true,
-                        timeStamp);
-                // Retreive the id of the newly added recording.
-                final long recordingId = mDatabase.getRecordingDao().add(recording);
+        mHandler.post(() -> {
+            final long timeStamp = System.currentTimeMillis();
+            // Create the date format for the name.
+            SimpleDateFormat format = new SimpleDateFormat(
+                    // TODO: store this somewhere centralized.
+                    "yyyy-MM-dd'T'HH:mm:ss",
+                    Locale.getDefault());
+            // Create the new recording.
+            Recording recording = new Recording(
+                    format.format(new Date(timeStamp)),
+                    type,
+                    true,
+                    timeStamp);
+            // Retreive the id of the newly added recording.
+            final long recordingId = mDatabase.getRecordingDao().add(recording);
 
-                Log.d(TAG, "run: start recording id: " + recordingId);
-                // Tell the repository to start a new recording.
-                recording = mDatabase.getRecordingDao().getRecording(recordingId);
-                mLocationRepository.startRecording(recording);
-                mLocationRepository.addObserver(mObserver);
-            }
+            Log.d(TAG, "run: start recording id: " + recordingId);
+            // Tell the repository to start a new recording.
+            recording = mDatabase.getRecordingDao().getRecording(recordingId);
+            mLocationRepository.startRecording(recording);
+            mLocationRepository.addObserver(mObserver);
         });
     }
 

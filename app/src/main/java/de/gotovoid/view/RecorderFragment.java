@@ -1,7 +1,7 @@
 package de.gotovoid.view;
 
-import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -22,8 +22,10 @@ import java.util.List;
 import de.gotovoid.R;
 import de.gotovoid.database.model.Recording;
 import de.gotovoid.database.model.RecordingEntry;
+import de.gotovoid.databinding.RecorderFragmentBinding;
 import de.gotovoid.domain.model.geodata.GeoCoordinate;
 import de.gotovoid.service.repository.LocationRepository;
+import de.gotovoid.view.binding.FlightInfoData;
 import de.gotovoid.view.model.RecorderViewModel;
 
 /**
@@ -40,7 +42,7 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
     private RecorderAdapter mAdapter;
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(@Nullable final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate() called with: savedInstanceState = [" + savedInstanceState + "]");
         mViewModel = ViewModelProviders.of(this).get(RecorderViewModel.class);
@@ -55,10 +57,10 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
         Log.d(TAG, "onCreateView() called with: inflater = ["
                 + inflater + "], container = [" + container + "], savedInstanceState = ["
                 + savedInstanceState + "]");
-        View view = super.onCreateView(inflater, container, savedInstanceState);
-        View rootView = inflater.inflate(R.layout.recorder_fragment, container, false);
+        RecorderFragmentBinding binding = DataBindingUtil.inflate(inflater,
+                R.layout.recorder_fragment, container, false);
         // Add the back action.
-        mDismissLayout = (SwipeDismissFrameLayout) rootView.findViewById(R.id.dismiss_layout);
+        mDismissLayout = binding.dismissLayout;
         mDismissLayout.addCallback(new SwipeDismissFrameLayout.Callback() {
             @Override
             public void onDismissed(final SwipeDismissFrameLayout layout) {
@@ -67,7 +69,7 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
             }
         });
 
-        mRecyclerView = rootView.findViewById(R.id.recycler_view);
+        mRecyclerView = binding.recyclerView;
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.requestFocus();
 
@@ -76,44 +78,27 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
         mAdapter = new RecorderAdapter();
         mRecyclerView.setAdapter(mAdapter);
 
-        mViewModel.getEntries().observe(this, new Observer<List<RecordingEntry>>() {
-            @Override
-            public void onChanged(@Nullable final List<RecordingEntry> recordingEntries) {
-                Log.d(TAG, "onChanged() called with: recordingEntries = ["
-                        + recordingEntries + "]");
-                final int size = recordingEntries.size();
-                if (size < 2) {
-                    return;
-                }
-                final RecordingEntry lastEntry = recordingEntries.get(size - 1);
-                final RecordingEntry previousEntry = recordingEntries.get(size - 2);
-                final GeoCoordinate lastCoord = new GeoCoordinate(lastEntry.getLatitude(),
-                        lastEntry.getLongitude());
-                final GeoCoordinate previousCoord = new GeoCoordinate(previousEntry.getLatitude(),
-                        previousEntry.getLongitude());
-                // Time difference in seconds
-                final long timeDiff = (lastEntry.getTimeStamp() - previousEntry.getTimeStamp())
-                        / 1000;
-
-                final double distance = previousCoord.getHaversineDistanceTo(lastCoord);
-                final double heightDiff = lastEntry.getAltitude() - previousEntry.getAltitude();
-
-                final double horizontalSpeed = (distance / timeDiff) * 3600 / 1000;
-                final double verticalSpeed = (heightDiff / timeDiff);
-                final FlightInfoData flightInfoData = new FlightInfoData(
-                        (int) verticalSpeed,
-                        (int) horizontalSpeed,
-                        lastEntry.getAltitude());
-                mAdapter.setFlightInfoData(flightInfoData);
-                List<GeoCoordinate> coordinates = new ArrayList<>();
-                for (RecordingEntry entry : recordingEntries) {
-                    coordinates.add(new GeoCoordinate(entry.getLatitude(), entry.getLongitude()));
-                }
-                mAdapter.setGeoCoordinates(coordinates);
+        mViewModel.getEntries().observe(this, (recordingEntries) -> {
+            Log.d(TAG, "onChanged() called with: recordingEntries = ["
+                    + recordingEntries + "]");
+            final int size = recordingEntries.size();
+            if (size < 2) {
+                return;
             }
+            final RecordingEntry lastEntry = recordingEntries.get(size - 1);
+            final RecordingEntry previousEntry = recordingEntries.get(size - 2);
+            // TODO move this to async model code!
+            final FlightInfoData flightInfoData = new FlightInfoData(previousEntry, lastEntry);
+            mAdapter.setFlightInfoData(flightInfoData);
+            List<GeoCoordinate> coordinates = new ArrayList<>();
+            for (final RecordingEntry entry : recordingEntries) {
+                coordinates.add(new GeoCoordinate(entry.getLatitude(), entry.getLongitude()));
+            }
+            mAdapter.setGeoCoordinates(coordinates);
         });
 
-        return rootView;
+        mViewModel.getState().observe(this, (state) -> binding.calibrating.setState(state));
+        return binding.getRoot();
     }
 
     @Override
@@ -148,31 +133,6 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
         mViewModel.requestUpdate();
     }
 
-    private class FlightInfoData {
-        final int mAscendingSpeed;
-        final int mAltitude;
-        final int mSpeed;
-
-        public FlightInfoData(final int ascendingSpeed,
-                              final int speed,
-                              final int altitude) {
-            mAscendingSpeed = ascendingSpeed;
-            mAltitude = altitude;
-            mSpeed = speed;
-        }
-
-        public int getAscendingSpeed() {
-            return mAscendingSpeed;
-        }
-
-        public int getAltitude() {
-            return mAltitude;
-        }
-
-        public int getSpeed() {
-            return mSpeed;
-        }
-    }
 
     private class FlightInfoViewHolder extends RecyclerView.ViewHolder {
         private final FlightInfoView mView;
@@ -186,7 +146,7 @@ public class RecorderFragment extends Fragment implements IUpdateableAmbientMode
             if (data != null && mView != null) {
                 mView.setAscendingSpeed(data.getAscendingSpeed());
                 mView.setAltitude(data.getAltitude());
-                mView.setSpeed(data.getSpeed());
+                mView.setSpeed(data.getGroundSpeed());
             }
         }
     }

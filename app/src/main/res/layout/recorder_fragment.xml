@@ -1,13 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.wear.widget.SwipeDismissFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/dismiss_layout"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/background_default">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <android.support.wear.widget.WearableRecyclerView
-        android:id="@+id/recycler_view"
+    <android.support.wear.widget.SwipeDismissFrameLayout
+        android:id="@+id/dismiss_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:background="@color/background_default">
 
-</android.support.wear.widget.SwipeDismissFrameLayout>
+        <android.support.wear.widget.WearableRecyclerView
+            android:id="@+id/recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <include
+            android:id="@+id/calibrating"
+            layout="@layout/calibrating_view" />
+
+    </android.support.wear.widget.SwipeDismissFrameLayout>
+</layout>
