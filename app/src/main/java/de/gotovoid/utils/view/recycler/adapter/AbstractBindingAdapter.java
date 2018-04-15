@@ -120,6 +120,15 @@ public class AbstractBindingAdapter<Data,
     }
 
     /**
+     * Returns the {@link DataDelegate}.
+     *
+     * @return the {@link DataDelegate}
+     */
+    protected DataDelegate<Data> getDataDelegate() {
+        return mDataDelegate;
+    }
+
+    /**
      * Creates new {@link BindingViewHolder} instances.
      * Holds the layout id and a {@link BindingViewHolder.DataBinder} instance used to create
      * new instances of a concrete {@link BindingViewHolder}.

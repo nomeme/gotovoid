@@ -2,7 +2,7 @@ package de.gotovoid.view;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
-import android.graphics.drawable.Drawable;
+import android.databinding.ViewDataBinding;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -19,14 +19,18 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import de.gotovoid.R;
+import de.gotovoid.databinding.RecordingListItemBinding;
+import de.gotovoid.utils.view.recycler.BindingViewHolder;
+import de.gotovoid.utils.view.recycler.adapter.AbstractBindingAdapter;
+import de.gotovoid.utils.view.recycler.adapter.MutableDataDelegate;
+import de.gotovoid.utils.view.recycler.adapter.SimpleBindingAdapter;
+import de.gotovoid.utils.view.recycler.adapter.SimpleLayoutBinderDelegate;
 import de.gotovoid.view.model.RecordingListViewModel;
 import de.gotovoid.database.model.Recording;
 
@@ -49,9 +53,9 @@ public class RecordingListFragment extends Fragment {
      */
     private WearableRecyclerView mRecyclerView;
     /**
-     * {@link RecordingListAdapter} to manage the data displayed by the {@link RecyclerView}.
+     * {@link SimpleBindingAdapter} to manage the data displayed by the {@link RecyclerView}.
      */
-    private RecordingListAdapter mAdapter;
+    private SimpleMutableAdapter<Recording, RecordingListItemBinding> mAdapter;
     /**
      * {@link WearableRecyclerView.LayoutManager} managing the layout of the {@link RecyclerView}.
      */
@@ -69,11 +73,11 @@ public class RecordingListFragment extends Fragment {
             @Override
             public void onChanged(@Nullable final List<Recording> recordings) {
                 if (recordings == null) {
-                    mAdapter.setEntities(new ArrayList<Recording>());
+                    mAdapter.setData(new ArrayList<Recording>());
                     return;
                 }
                 Log.d(TAG, "onChanged: size: " + recordings.size());
-                mAdapter.setEntities(recordings);
+                mAdapter.setData(recordings);
             }
         });
     }
@@ -88,29 +92,46 @@ public class RecordingListFragment extends Fragment {
                 + inflater + "], container = ["
                 + container + "], savedInstanceState = ["
                 + savedInstanceState + "]");
-        final View contenView = inflater.inflate(R.layout.recording_list_fragment,
+        final View contentView = inflater.inflate(R.layout.recording_list_fragment,
                 container,
                 false);
         // Get the RecyclerView and configure it.
-        mRecyclerView = contenView.findViewById(R.id.recycler_view);
+        mRecyclerView = contentView.findViewById(R.id.recycler_view);
         // Tell the RecyclerView that it's size will not change because of the content.
         mRecyclerView.setHasFixedSize(true);
         // Wearable only. Align first and last element at the center of the RecyclerView.
         mRecyclerView.setEdgeItemsCenteringEnabled(true);
         // Request the focus so we can use rotary input devices.
         mRecyclerView.requestFocus();
-        // TODO: use ItemTouchHelper for swipe gestures!
 
         // Use a linear LayoutManager with the RecyclerView.
         mLayoutManager = new WearableLinearLayoutManager(getContext());
         mRecyclerView.setLayoutManager(mLayoutManager);
 
         // Use the RecordingListAdapter.
-        mAdapter = new RecordingListAdapter();
+        mAdapter = new SimpleMutableAdapter<>(
+                R.layout.recording_list_item,
+                (data, binding) -> binding.setRecording(data));
         mRecyclerView.setAdapter(mAdapter);
-        mAdapter.setEntities(mModel.getRecordings().getValue());
-        Log.d(TAG, "onCreateView: data: " + mModel.getRecordings().getValue());
-        mDismissLayout = contenView.findViewById(R.id.dismiss_layout);
+        mAdapter.setData(mModel.getRecordings().getValue());
+        mAdapter.setOnItemClickListener((itemView, adapterPosition) -> {
+            // TODO: create method for this.
+            final Recording recording = mAdapter.getItemAt(adapterPosition);
+            Toast.makeText(getContext(), recording.getName() + ", " + recording.getId(),
+                    Toast.LENGTH_SHORT).show();
+            Fragment fragment = new RecordingDisplayFragment();
+            Bundle bundle = new Bundle();
+            bundle.putLong(RecordingDisplayFragment.RECORDING_ID_KEY, recording.getId());
+            fragment.setArguments(bundle);
+            FragmentManager manager = getFragmentManager();
+            FragmentTransaction transaction = manager.beginTransaction();
+            transaction.add(R.id.content_container,
+                    fragment,
+                    fragment.getClass().getSimpleName());
+            transaction.addToBackStack(fragment.getClass().getSimpleName());
+            transaction.commit();
+        });
+        mDismissLayout = contentView.findViewById(R.id.dismiss_layout);
         mDismissLayout.addCallback(new Callback() {
             @Override
             public void onDismissed(final SwipeDismissFrameLayout layout) {
@@ -119,10 +140,11 @@ public class RecordingListFragment extends Fragment {
             }
         });
 
-        ItemTouchHelper.Callback callback = new SwipeDeleteTouchHelperCallback(mAdapter);
+        ItemTouchHelper.Callback callback = new SwipeDeleteTouchHelperCallback(mAdapter,
+                (position) -> mModel.deleteRecording(mAdapter.getItemAt(position)));
         ItemTouchHelper touchHelper = new ItemTouchHelper(callback);
         touchHelper.attachToRecyclerView(mRecyclerView);
-        return contenView;
+        return contentView;
     }
 
     /**
@@ -131,6 +153,7 @@ public class RecordingListFragment extends Fragment {
      */
     private static class SwipeDeleteTouchHelperCallback extends ItemTouchHelper.Callback {
         private final Adapter mAdapter;
+        private final ModelCallback mModelCallback;
 
         /**
          * Constructor taking the {@link RecyclerView.Adapter} implementing the {@link Adapter}
@@ -138,8 +161,10 @@ public class RecordingListFragment extends Fragment {
          *
          * @param adapter {@link Adapter} to be notified on delete
          */
-        public SwipeDeleteTouchHelperCallback(final Adapter adapter) {
+        public SwipeDeleteTouchHelperCallback(final @NonNull Adapter adapter,
+                                              final @NonNull ModelCallback modelCallback) {
             mAdapter = adapter;
+            mModelCallback = modelCallback;
         }
 
         @Override
@@ -159,7 +184,9 @@ public class RecordingListFragment extends Fragment {
 
         @Override
         public void onSwiped(final RecyclerView.ViewHolder viewHolder, final int direction) {
-            mAdapter.onItemDelete(viewHolder.getAdapterPosition());
+            final int adapterPopsition = viewHolder.getAdapterPosition();
+            mAdapter.onItemDelete(adapterPopsition);
+            mModelCallback.onItemDelete(adapterPopsition);
         }
 
         @Override
@@ -184,129 +211,61 @@ public class RecordingListFragment extends Fragment {
              */
             void onItemDelete(final int position);
         }
+
+        /**
+         * Interface to be implemented by the model, so the change can be propagated to the
+         * model.
+         */
+        public interface ModelCallback {
+            /**
+             * Telling the model which item to delete.
+             *
+             * @param position position of the item
+             */
+            void onItemDelete(final int position);
+        }
     }
 
     /**
-     * {@link RecyclerView.ViewHolder} for {@link Recording}s.
+     * Modifyable {@link AbstractBindingAdapter}. Allows to delete items.
+     *
+     * @param <Data>    type of the data
+     * @param <Binding> type of the {@link ViewDataBinding}
      */
-    private class ViewHolder extends RecyclerView.ViewHolder {
-        private final ImageView mIcon;
-        private final TextView mTextView;
-
-        /**
-         * Constructor taking the {@link View} to fill with data.
-         *
-         * @param itemView the {@link View} to hold.
-         */
-        public ViewHolder(final View itemView) {
-            super(itemView);
-            mIcon = itemView.findViewById(R.id.image);
-            mTextView = itemView.findViewById(R.id.title);
-
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(final View view) {
-                    if (view != itemView) {
-                        return;
-                    }
-                    int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        final String name = mAdapter.getEntities().get(position).getName();
-                        final long recordingId = mAdapter.getEntities().get(position).getId();
-                        Toast.makeText(getContext(),
-                                name + ", " + recordingId,
-                                Toast.LENGTH_SHORT).show();
-                        Fragment fragment = new RecordingDisplayFragment();
-                        Bundle bundle = new Bundle();
-                        bundle.putLong(RecordingDisplayFragment.RECORDING_ID_KEY, recordingId);
-                        fragment.setArguments(bundle);
-                        FragmentManager manager = getFragmentManager();
-                        FragmentTransaction transaction = manager.beginTransaction();
-                        transaction.add(R.id.content_container,
-                                fragment,
-                                fragment.getClass().getSimpleName());
-                        transaction.addToBackStack(fragment.getClass().getSimpleName());
-                        transaction.commit();
-                    }
-                }
-            });
-        }
-
-        /**
-         * Set the text to the {@link View}.
-         *
-         * @param text text to set
-         */
-        public void setText(final String text) {
-            mTextView.setText(text);
-        }
-
-        /**
-         * Set the image to the {@link View}.
-         *
-         * @param drawable image to set
-         */
-        public void setIconImage(final Drawable drawable) {
-            mIcon.setImageDrawable(drawable);
-        }
-
-    }
-
-    /**
-     * Implementation of the {@link GenericEntityAdapter} for {@link Recording} and
-     * {@link ViewHolder}.
-     */
-    private class RecordingListAdapter extends GenericEntityAdapter<Recording, ViewHolder>
+    final class SimpleMutableAdapter<Data, Binding extends ViewDataBinding>
+            extends AbstractBindingAdapter<Data, Binding, BindingViewHolder<Data, Binding>>
             implements SwipeDeleteTouchHelperCallback.Adapter {
-        private static final int RECORDING = R.string.recycler_view_recording;
 
-        @Override
-        @NonNull
-        public ViewHolder onCreateViewHolder(@NonNull final ViewGroup parent,
-                                             final int viewType) {
-            final ViewHolder viewHolder;
-            final View view;
-            // Actually whe do not need to check here because we should only use Recordings here.
-            switch (viewType) {
-                case RECORDING:
-                    view = LayoutInflater.from(parent.getContext())
-                            .inflate(R.layout.recording_list_item, parent, false);
-                    viewHolder = new ViewHolder(view);
-                    break;
-                default:
-                    view = LayoutInflater.from(parent.getContext())
-                            .inflate(R.layout.recording_list_item, parent, false);
-                    viewHolder = new ViewHolder(view);
-                    break;
-            }
-            return viewHolder;
+        /**
+         * Constructor taking the layout id and {@link BindingViewHolder.DataBinder},
+         *
+         * @param layoutId the layout id
+         * @param binder   the {@link BindingViewHolder.DataBinder}
+         */
+        public SimpleMutableAdapter(int layoutId,
+                                    BindingViewHolder.DataBinder<Data, Binding> binder) {
+            this(new LayoutBinder<>(layoutId, binder));
+        }
+
+        /**
+         * Constructor taking the {@link AbstractBindingAdapter.LayoutBinder}.
+         *
+         * @param binder the {@link AbstractBindingAdapter.LayoutBinder}
+         */
+        protected SimpleMutableAdapter(final LayoutBinder<Data,
+                Binding, BindingViewHolder<Data, Binding>> binder) {
+            super(new SimpleLayoutBinderDelegate<>(binder), new MutableDataDelegate<>());
         }
 
         @Override
-        public void onBindViewHolder(@NonNull final ViewHolder holder,
-                                     final int position) {
-            Recording recording = getEntities().get(position);
-            // TODO: show different icons for hike and flight
-            switch (recording.getType()) {
-                case HIKE:
-                    holder.setIconImage(getResources().getDrawable(R.mipmap.ic_launcher));
-                    break;
-                case FLIGHT:
-                    holder.setIconImage(getResources().getDrawable(R.mipmap.ic_launcher));
-                    break;
-                default:
-                    // Do nothing
-                    break;
-            }
-            holder.setText(getEntities().get(position).getName());
+        protected MutableDataDelegate<Data> getDataDelegate() {
+            // TODO: code smell... this could be solved by another generic... still ugly though
+            return (MutableDataDelegate<Data>) super.getDataDelegate();
         }
 
         @Override
         public void onItemDelete(final int position) {
-            Recording toDelete = getEntities().remove(position);
-            mModel.deleteRecording(toDelete);
-            notifyItemRemoved(position);
+            getDataDelegate().removeItemAt(position, this);
         }
-
     }
 }
