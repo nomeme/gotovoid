@@ -22,7 +22,7 @@ public class SimpleDataDelegateTest {
     private static final int OBJECT_COUNT = 10;
     private static final int POSITION = 3;
     private SimpleDataDelegate mDelegate;
-    private RecyclerView.Adapter mAdapter;
+    protected RecyclerView.Adapter mAdapter;
 
     /**
      * Prepares the test run.
@@ -103,6 +103,26 @@ public class SimpleDataDelegateTest {
     }
 
     /**
+     * Verifies that adding null list does not cause {@link NullPointerException}.
+     */
+    @Test
+    public void testSetDataNull() {
+        List list = getFakeData();
+        try {
+            mDelegate.setData(list, mAdapter);
+        } catch (final NullPointerException exception) {
+            // Can not override final method notifyDataSetChanged()
+        }
+        list = getFakeData();
+        try {
+            mDelegate.setData(null, mAdapter);
+        } catch (final NullPointerException exception) {
+            // Can not override final method notifyDataSetChanged()
+        }
+        assertThat(mDelegate.getItemCount(), is(0));
+    }
+
+    /**
      * Verifies that getting data after adding data several times works as expected.
      */
     @Test
@@ -126,7 +146,7 @@ public class SimpleDataDelegateTest {
      * Verifies that the correct item id is returned.
      */
     @Test
-    public void testgetItemId() {
+    public void testGetItemId() {
         assertThat(mDelegate.getItemId(0), is(RecyclerView.NO_ID));
     }
 }

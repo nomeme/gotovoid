@@ -39,6 +39,15 @@ public class SimpleDataDelegate<Data>
         }
     }
 
+    /**
+     * Returns the managed data items.
+     *
+     * @return the managed data items
+     */
+    protected List<Data> getData() {
+        return mData;
+    }
+
     @Override
     public int getItemCount() {
         return mData.size();
@@ -53,6 +62,9 @@ public class SimpleDataDelegate<Data>
     public void setData(final @NonNull List<Data> data,
                         final @NonNull RecyclerView.Adapter adapter) {
         mData.clear();
+        if (data == null) {
+            return;
+        }
         mData.addAll(data);
         adapter.notifyDataSetChanged();
     }
